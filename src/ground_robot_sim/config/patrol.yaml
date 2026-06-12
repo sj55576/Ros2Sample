@@ -1,0 +1,22 @@
+ground_robot:
+  ros__parameters:
+    publish_rate: 30.0
+    scan_rate: 10.0
+    max_linear_speed: 0.8
+    max_angular_speed: 1.8
+    world_half_size: 5.0
+    obstacles: [2.0, 0.0, 0.45, -1.25, 1.2, 0.35, 0.5, -2.0, 0.5]
+
+diff_drive_patrol:
+  ros__parameters:
+    forward_speed: 0.25
+    turn_speed: 0.7
+    forward_duration: 5.0
+    turn_duration: 2.25
+    pause_duration: 0.4
+
+lidar_obstacle_stop:
+  ros__parameters:
+    forward_speed: 0.25
+    stop_distance: 0.75
+    front_angle_degrees: 30.0

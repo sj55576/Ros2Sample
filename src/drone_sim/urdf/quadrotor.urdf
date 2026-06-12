@@ -1,0 +1,77 @@
+<?xml version="1.0"?>
+<robot name="sample_quadrotor">
+  <link name="base_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.35 0.35 0.08"/>
+      </geometry>
+      <material name="body_blue">
+        <color rgba="0.1 0.3 0.9 1.0"/>
+      </material>
+    </visual>
+    <collision>
+      <geometry>
+        <box size="0.35 0.35 0.08"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="1.2"/>
+      <inertia ixx="0.02" ixy="0" ixz="0" iyy="0.02" iyz="0" izz="0.04"/>
+    </inertial>
+  </link>
+  <link name="front_rotor">
+    <visual>
+      <origin xyz="0.35 0 0.04" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.14" length="0.02"/>
+      </geometry>
+      <material name="rotor_dark">
+        <color rgba="0.02 0.02 0.02 1.0"/>
+      </material>
+    </visual>
+  </link>
+  <joint name="front_rotor_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="front_rotor"/>
+  </joint>
+  <link name="rear_rotor">
+    <visual>
+      <origin xyz="-0.35 0 0.04" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.14" length="0.02"/>
+      </geometry>
+      <material name="rotor_dark"/>
+    </visual>
+  </link>
+  <joint name="rear_rotor_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="rear_rotor"/>
+  </joint>
+  <link name="left_rotor">
+    <visual>
+      <origin xyz="0 0.35 0.04" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.14" length="0.02"/>
+      </geometry>
+      <material name="rotor_dark"/>
+    </visual>
+  </link>
+  <joint name="left_rotor_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="left_rotor"/>
+  </joint>
+  <link name="right_rotor">
+    <visual>
+      <origin xyz="0 -0.35 0.04" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.14" length="0.02"/>
+      </geometry>
+      <material name="rotor_dark"/>
+    </visual>
+  </link>
+  <joint name="right_rotor_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="right_rotor"/>
+  </joint>
+</robot>

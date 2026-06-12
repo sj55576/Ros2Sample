@@ -1,0 +1,28 @@
+# ROS 2 / colcon build products
+/build/
+/install/
+/log/
+
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# CMake / compile databases
+CMakeFiles/
+CMakeCache.txt
+compile_commands.json
+
+# Editors / OS
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Docker / local environment
+.env

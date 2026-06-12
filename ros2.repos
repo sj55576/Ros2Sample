@@ -1,0 +1,9 @@
+# External ROS 2 repositories for vcs import.
+#
+# Usage:
+#   mkdir -p src
+#   vcs import src < ros2.repos
+#
+# This file intentionally contains no external dependencies yet. Add pinned
+# repositories here when sample packages need upstream source dependencies.
+repositories: {}

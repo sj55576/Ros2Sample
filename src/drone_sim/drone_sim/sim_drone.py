@@ -10,7 +10,7 @@ from rclpy.node import Node
 from sensor_msgs.msg import Imu
 from tf2_ros import TransformBroadcaster
 
-from drone_sim.math_utils import clamp, quat_from_euler
+from drone_sim.math_utils import clamp, normalize_angle, quat_from_euler
 
 
 class SimDrone(Node):
@@ -106,7 +106,7 @@ class SimDrone(Node):
         self.x += self.vx * dt
         self.y += self.vy * dt
         self.z = max(0.0, self.z + self.vz * dt)
-        self.yaw += self.yaw_rate * dt
+        self.yaw = normalize_angle(self.yaw + self.yaw_rate * dt)
 
         self._publish_state(now)
 
@@ -117,10 +117,14 @@ class SimDrone(Node):
             dx = self.setpoint.pose.position.x - self.x
             dy = self.setpoint.pose.position.y - self.y
             dz = self.setpoint.pose.position.z - self.z
-            desired.linear.x = clamp(dx * self.position_kp, -self.max_linear_speed, self.max_linear_speed)
-            desired.linear.y = clamp(dy * self.position_kp, -self.max_linear_speed, self.max_linear_speed)
-            desired.linear.z = clamp(dz * self.position_kp, -self.max_linear_speed, self.max_linear_speed)
-            desired.angular.z = clamp(atan2(dy, dx) * self.yaw_kp, -self.max_yaw_rate, self.max_yaw_rate)
+            speed_limit = self.max_linear_speed
+            desired.linear.x = clamp(dx * self.position_kp, -speed_limit, speed_limit)
+            desired.linear.y = clamp(dy * self.position_kp, -speed_limit, speed_limit)
+            desired.linear.z = clamp(dz * self.position_kp, -speed_limit, speed_limit)
+            heading_error = normalize_angle(atan2(dy, dx) - self.yaw)
+            desired.angular.z = clamp(
+                heading_error * self.yaw_kp, -self.max_yaw_rate, self.max_yaw_rate
+            )
             if hypot(dx, dy) < 0.05:
                 desired.angular.z = 0.0
             return desired

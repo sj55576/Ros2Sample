@@ -1,0 +1,21 @@
+ground_robot:
+  ros__parameters:
+    publish_rate: 30.0
+    scan_rate: 10.0
+    max_linear_speed: 0.8
+    max_angular_speed: 1.8
+    world_half_size: 5.0
+    obstacles: [3.0, 0.75, 0.45, -1.5, 2.5, 0.35, 0.75, -2.0, 0.5]
+
+waypoint_follower:
+  ros__parameters:
+    waypoints: [1.5, 0.0, 1.5, 1.5, 0.0, 1.5, 0.0, 0.0]
+    tolerance_m: 0.15
+    hold_time_sec: 0.5
+    loop: true
+    max_linear_speed: 0.4
+    max_angular_speed: 1.2
+    kp_linear: 0.8
+    kp_angular: 1.5
+    heading_gate_rad: 0.5
+    publish_rate: 20.0

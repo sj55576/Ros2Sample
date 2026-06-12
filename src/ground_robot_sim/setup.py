@@ -26,7 +26,9 @@ setup(
         'console_scripts': [
             'diff_drive_patrol = ground_robot_sim.diff_drive_patrol:main',
             'ground_robot_node = ground_robot_sim.ground_robot_node:main',
+            'lidar_obstacle_avoid = ground_robot_sim.lidar_obstacle_avoid:main',
             'lidar_obstacle_stop = ground_robot_sim.lidar_obstacle_stop:main',
+            'waypoint_follower = ground_robot_sim.waypoint_follower:main',
         ],
     },
 )

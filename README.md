@@ -32,7 +32,7 @@
 
 | パッケージ | 目的 | 主な実行ファイル |
 | --- | --- | --- |
-| `ground_robot_sim` | 差動二輪風の地上ロボット、LiDAR 風停止判定、複数ロボット namespace の軽量サンプル | `ground_robot_node`, `diff_drive_patrol`, `lidar_obstacle_stop` |
+| `ground_robot_sim` | 差動二輪風の地上ロボット、LiDAR 風停止判定、閉ループウェイポイント追従、障害物回避、複数ロボット namespace の軽量サンプル | `ground_robot_node`, `diff_drive_patrol`, `lidar_obstacle_stop`, `lidar_obstacle_avoid`, `waypoint_follower` |
 | `drone_sim` | クアッドローター風の位置・高度制御、waypoint 指令、小規模 swarm namespace の軽量サンプル | `sim_drone`, `altitude_hold`, `waypoint_commander` |
 
 検出結果は `colcon list` で確認できます。
@@ -115,7 +115,7 @@ colcon test --event-handlers console_direct+
 colcon test-result --verbose
 ```
 
-`scripts/lint.sh` は検出できるパッケージに対して colcon test の lint 系テストを実行します。パッケージが存在しない作業途中の状態でも成功するようにしており、初期セットアップや段階的な開発でも CI を通しやすくしています。
+各パッケージの `test/` 以下に pytest 単体テスト（純粋関数向け）と flake8 / pep257 の lint テストを収録しています。`scripts/lint.sh` は検出できるパッケージに対して colcon test の lint 系テストを実行します。パッケージが存在しない作業途中の状態でも成功するようにしており、初期セットアップや段階的な開発でも CI を通しやすくしています。
 
 ## 実行例
 
@@ -130,6 +130,12 @@ ros2 run ground_robot_sim diff_drive_patrol
 
 # LiDAR 風データで停止判断するサンプル
 ros2 run ground_robot_sim lidar_obstacle_stop
+
+# 閉ループウェイポイント追従サンプル
+ros2 run ground_robot_sim waypoint_follower
+
+# LiDAR 風データで障害物を回避するサンプル
+ros2 run ground_robot_sim lidar_obstacle_avoid
 
 # ドローン状態を publish するサンプル
 ros2 run drone_sim sim_drone
@@ -150,9 +156,11 @@ ros2 topic list
 launch ファイルと RViz 設定も同梱しています。代表的なデモは次の通りです。
 
 ```bash
-# 地上ロボット: 巡回、LiDAR停止、複数ロボット
+# 地上ロボット: 巡回、LiDAR停止、ウェイポイント追従、障害物回避、複数ロボット
 ros2 launch ground_robot_sim diff_drive_patrol.launch.py
 ros2 launch ground_robot_sim lidar_obstacle_stop.launch.py
+ros2 launch ground_robot_sim waypoint_follower.launch.py
+ros2 launch ground_robot_sim lidar_obstacle_avoid.launch.py
 ros2 launch ground_robot_sim multi_robot.launch.py
 
 # ドローン: waypoint飛行、高度維持、小規模swarm

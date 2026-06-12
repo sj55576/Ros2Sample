@@ -1,15 +1,12 @@
 """Publish a repeating list of PoseStamped waypoints for a simulated drone."""
 
 from math import dist
-from typing import List, Sequence, Tuple
 
 import rclpy
+from drone_sim.waypoint_utils import Point3, parse_waypoints
 from geometry_msgs.msg import PoseStamped
 from nav_msgs.msg import Odometry
 from rclpy.node import Node
-
-
-Point3 = Tuple[float, float, float]
 
 
 class WaypointCommander(Node):
@@ -37,7 +34,7 @@ class WaypointCommander(Node):
         self.tolerance_m = float(self.get_parameter('tolerance_m').value)
         self.hold_time_sec = float(self.get_parameter('hold_time_sec').value)
         self.loop = bool(self.get_parameter('loop').value)
-        self.waypoints = self._parse_waypoints(self.get_parameter('waypoints').value)
+        self.waypoints = parse_waypoints(self.get_parameter('waypoints').value)
         self.current_index = 0
         self.current_position: Point3 = (0.0, 0.0, 0.0)
         self.arrival_time = None
@@ -47,18 +44,6 @@ class WaypointCommander(Node):
         period = 1.0 / max(float(self.get_parameter('publish_rate_hz').value), 1.0)
         self.create_timer(period, self._publish_setpoint)
         self.get_logger().info(f'Loaded {len(self.waypoints)} waypoint(s)')
-
-    def _parse_waypoints(self, raw_waypoints: Sequence[float]) -> List[Point3]:
-        if len(raw_waypoints) < 3 or len(raw_waypoints) % 3 != 0:
-            raise ValueError('waypoints parameter must contain x, y, z triples')
-        return [
-            (
-                float(raw_waypoints[index]),
-                float(raw_waypoints[index + 1]),
-                float(raw_waypoints[index + 2]),
-            )
-            for index in range(0, len(raw_waypoints), 3)
-        ]
 
     def _on_odom(self, msg: Odometry) -> None:
         self.current_position = (
@@ -95,7 +80,9 @@ class WaypointCommander(Node):
             self.current_index += 1
         elif self.loop:
             self.current_index = 0
-        self.get_logger().info(f'Commanding waypoint {self.current_index}: {self.waypoints[self.current_index]}')
+        self.get_logger().info(
+            f'Commanding waypoint {self.current_index}: {self.waypoints[self.current_index]}'
+        )
 
 
 def main(args=None) -> None:

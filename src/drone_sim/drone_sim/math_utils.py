@@ -1,12 +1,17 @@
 """Small math helpers used by the drone simulation nodes."""
 
-from math import cos, sin
+from math import atan2, cos, sin
 from typing import Tuple
 
 
 def clamp(value: float, lower: float, upper: float) -> float:
     """Clamp value to the inclusive [lower, upper] range."""
     return max(lower, min(upper, value))
+
+
+def normalize_angle(angle: float) -> float:
+    """Wrap an angle to [-pi, pi]."""
+    return atan2(sin(angle), cos(angle))
 
 
 def quat_from_euler(roll: float, pitch: float, yaw: float) -> Tuple[float, float, float, float]:

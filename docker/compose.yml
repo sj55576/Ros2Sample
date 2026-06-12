@@ -1,0 +1,16 @@
+services:
+  ros2sample:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      args:
+        ROS_DISTRO: ${ROS_DISTRO:-jazzy}
+    image: ros2sample:${ROS_DISTRO:-jazzy}
+    working_dir: /workspace/Ros2Sample
+    volumes:
+      - ..:/workspace/Ros2Sample:cached
+    environment:
+      ROS_DISTRO: ${ROS_DISTRO:-jazzy}
+    command: bash -lc "source /opt/ros/${ROS_DISTRO:-jazzy}/setup.bash && bash"
+    tty: true
+    stdin_open: true

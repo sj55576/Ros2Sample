@@ -1,0 +1,4 @@
+swarm:
+  drone_count: 3
+  spacing_m: 2.0
+  altitude_m: 1.2

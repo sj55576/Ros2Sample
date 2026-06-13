@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
-ARG UBUNTU_VERSION=24.04
-ARG ROS_DISTRO=jazzy
-FROM ros:${ROS_DISTRO}-ros-base-noble
+ARG ROS_DISTRO=lyrical
+ARG UBUNTU_CODENAME=resolute
+FROM ros:${ROS_DISTRO}-ros-base-${UBUNTU_CODENAME}
 
 ENV DEBIAN_FRONTEND=noninteractive
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]

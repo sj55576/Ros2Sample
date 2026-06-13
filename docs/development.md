@@ -12,8 +12,8 @@
 ## 推奨コマンド
 
 ```bash
-source /opt/ros/jazzy/setup.bash
-./scripts/rosdep-install.sh jazzy
+source /opt/ros/lyrical/setup.bash
+./scripts/rosdep-install.sh lyrical
 ./scripts/lint.sh
 ./scripts/build.sh
 colcon test --event-handlers console_direct+
@@ -22,8 +22,9 @@ colcon test-result --verbose
 
 ## ROS 2 ディストリビューション方針
 
-- **Jazzy**: Ubuntu 24.04 の基準環境です。CI は Jazzy を優先します。
-- **Kilted**: Jazzy からの差分を確認する開発候補です。
+- **Lyrical Luth**: Ubuntu 26.04 を一次プラットフォームとする 2026年5月リリースの新 LTS です。CI の最優先ターゲットです。Ubuntu 24.04 (Noble) でも動作します。
+- **Jazzy**: Ubuntu 24.04 の安定版です。Jazzy は 2029年まで引き続きサポートされるため、CI でも検証を継続します。
+- **Kilted**: Jazzy/Lyrical からの差分を確認する開発候補です。
 - **Rolling**: 最新 API 確認用です。破壊的変更が入る可能性を前提に扱います。
 
 ## 現在のサンプルパッケージ

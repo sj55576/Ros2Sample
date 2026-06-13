@@ -9,6 +9,55 @@ on:
   workflow_dispatch:
 
 jobs:
+
+  foxy:
+    name: Ubuntu 20.04 / ROS 2 Foxy
+    runs-on: ubuntu-20.04
+    env:
+      ROS_DISTRO: foxy
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up ROS 2 apt repository
+        uses: ros-tooling/setup-ros@v0.7
+        with:
+          required-ros-distributions: foxy
+
+      - name: Install developer tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            python3-colcon-common-extensions \
+            python3-rosdep \
+            python3-vcstool
+
+      - name: Import vcs dependencies
+        run: |
+          mkdir -p src
+          vcs import src < ros2.repos
+
+      - name: Install ROS dependencies
+        run: ./scripts/rosdep-install.sh foxy
+
+      - name: Build
+        run: |
+          export AMENT_TRACE_SETUP_FILES="${AMENT_TRACE_SETUP_FILES:-}"
+          source /opt/ros/foxy/setup.bash
+          ./scripts/build.sh
+
+      - name: Lint
+        run: |
+          export AMENT_TRACE_SETUP_FILES="${AMENT_TRACE_SETUP_FILES:-}"
+          source /opt/ros/foxy/setup.bash
+          ./scripts/lint.sh
+
+      - name: Test
+        run: |
+          export AMENT_TRACE_SETUP_FILES="${AMENT_TRACE_SETUP_FILES:-}"
+          source /opt/ros/foxy/setup.bash
+          colcon test --event-handlers console_direct+
+          colcon test-result --verbose
   lyrical:
     name: Ubuntu 24.04 / ROS 2 Lyrical
     runs-on: ubuntu-24.04

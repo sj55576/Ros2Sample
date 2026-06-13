@@ -11,6 +11,11 @@ Visualization Manager:
       Enabled: true
       Name: Grid
       Plane: XY
+    - Class: rviz_default_plugins/RobotModel
+      Enabled: true
+      Name: RobotModel
+      Description Topic:
+        Value: /robot_description
     - Class: rviz_default_plugins/TF
       Enabled: true
       Name: TF

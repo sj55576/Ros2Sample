@@ -7,8 +7,6 @@
   <maintainer email="dev@example.com">ROS 2 Sample Maintainers</maintainer>
   <license>MIT</license>
 
-  <buildtool_depend>ament_python</buildtool_depend>
-
   <depend>geometry_msgs</depend>
   <depend>nav_msgs</depend>
   <depend>rclpy</depend>

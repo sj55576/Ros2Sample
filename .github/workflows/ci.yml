@@ -36,16 +36,21 @@ jobs:
       - name: Install ROS dependencies
         run: ./scripts/rosdep-install.sh jazzy
 
-      - name: Lint
-        run: ./scripts/lint.sh
-
       - name: Build
         run: |
+          export AMENT_TRACE_SETUP_FILES="${AMENT_TRACE_SETUP_FILES:-}"
           source /opt/ros/jazzy/setup.bash
           ./scripts/build.sh
 
+      - name: Lint
+        run: |
+          export AMENT_TRACE_SETUP_FILES="${AMENT_TRACE_SETUP_FILES:-}"
+          source /opt/ros/jazzy/setup.bash
+          ./scripts/lint.sh
+
       - name: Test
         run: |
+          export AMENT_TRACE_SETUP_FILES="${AMENT_TRACE_SETUP_FILES:-}"
           source /opt/ros/jazzy/setup.bash
           colcon test --event-handlers console_direct+
           colcon test-result --verbose

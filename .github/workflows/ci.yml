@@ -36,13 +36,15 @@ jobs:
       - name: Install ROS dependencies
         run: ./scripts/rosdep-install.sh jazzy
 
-      - name: Lint
-        run: ./scripts/lint.sh
-
       - name: Build
         run: |
           source /opt/ros/jazzy/setup.bash
           ./scripts/build.sh
+
+      - name: Lint
+        run: |
+          source /opt/ros/jazzy/setup.bash
+          ./scripts/lint.sh
 
       - name: Test
         run: |

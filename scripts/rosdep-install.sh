@@ -12,6 +12,9 @@ if [[ ! -d src ]]; then
   mkdir -p src
 fi
 
+sudo rosdep init 2>/dev/null || true
+rosdep update
+
 rosdep install \
   --from-paths src \
   --ignore-src \

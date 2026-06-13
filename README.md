@@ -1,7 +1,7 @@
 # Ros2Sample
 
 **Ros2Sample** は、ROS 2 でロボット／ドローンのサンプルを学習・検証するためのワークスペースです。<br>
-このリポジトリは **日本語を第一言語** として、開発者が Ubuntu 24.04 / 26.04 と ROS 2 Lyrical / Jazzy / Kilted / Rolling の環境で、依存関係の取得、ビルド、実行、CI 検証を迷わず行えることを目標にしています。
+このリポジトリは **日本語を第一言語** として、開発者が Ubuntu 20.04 / 24.04 / 26.04 と ROS 2 Foxy / Lyrical / Jazzy / Kilted / Rolling の環境で、依存関係の取得、ビルド、実行、CI 検証を迷わず行えることを目標にしています。
 
 > 現在は依存を軽くした Python ベースの地上ロボット／クアッドローターシミュレーションサンプルを `src/` 以下に収録しています。Gazebo 等の重いシミュレータに進む前に、ROS 2 の topic、launch、namespace、TF、センサー風データの流れを確認するための入口として使えます。
 
@@ -11,6 +11,7 @@
 | --- | --- | --- | --- |
 | Ubuntu 26.04 LTS | Lyrical Luth | 推奨・CI 対象 | 2026年5月リリースの新 LTS。サポート期間 2031年5月まで。 |
 | Ubuntu 24.04 LTS | Jazzy Jalisco | 安定版・CI 対象 | Lyrical でも Noble は 2029年まで引き続きサポートされます。 |
+| Ubuntu 20.04 LTS | Foxy Fitzroy | 互換対象 | EOL 済みのため新規採用は非推奨ですが、既存環境向けに軽量 Python サンプルのビルド・実行互換性を維持します。Gazebo/GZ 連携は対象外です。 |
 | Ubuntu 24.04 LTS | Kilted Kaiju | 開発候補 | パッケージ互換性を確認しながら利用してください。 |
 | Ubuntu 24.04 / 26.04 | Rolling Ridley | 最新 API 検証 | API 変更が頻繁に入るため、CI 失敗時は変更内容を確認してください。 |
 
@@ -18,7 +19,7 @@
 
 ```text
 .
-├── .github/workflows/ci.yml   # GitHub Actions: ROS 2 Jazzy で colcon build/test
+├── .github/workflows/ci.yml   # GitHub Actions: 手動実行で Foxy/Jazzy/Lyrical の colcon build/test
 ├── docker/                    # Docker 開発環境
 ├── docs/                      # 補足ドキュメント
 ├── scripts/                   # 開発者向けヘルパースクリプト
@@ -62,6 +63,9 @@ source /opt/ros/lyrical/setup.bash
 
 # Jazzy
 source /opt/ros/jazzy/setup.bash
+
+# Foxy (Ubuntu 20.04 既存環境向け)
+source /opt/ros/foxy/setup.bash
 ```
 
 ### rosdep
@@ -177,7 +181,7 @@ RViz を使う場合は、ビルド後に `install/<package>/share/<package>/rvi
 
 ## Docker 開発環境
 
-Ubuntu 26.04 + ROS 2 Lyrical の開発コンテナを用意しています。
+Ubuntu 26.04 + ROS 2 Lyrical の開発コンテナを既定にしています。Ubuntu 20.04 + ROS 2 Foxy など、ROS 2 公式 Docker イメージに存在する組み合わせも `ROS_DISTRO` と `UBUNTU_CODENAME` で指定できます。
 
 ```bash
 # Lyrical (デフォルト・推奨)
@@ -186,14 +190,18 @@ docker compose -f docker/compose.yml run --rm ros2sample
 
 # Jazzy を使う場合
 ROS_DISTRO=jazzy UBUNTU_CODENAME=noble docker compose -f docker/compose.yml build
-ROS_DISTRO=jazzy docker compose -f docker/compose.yml run --rm ros2sample
+ROS_DISTRO=jazzy UBUNTU_CODENAME=noble docker compose -f docker/compose.yml run --rm ros2sample
+
+# Foxy / Ubuntu 20.04 を使う場合（既存環境互換）
+ROS_DISTRO=foxy UBUNTU_CODENAME=focal docker compose -f docker/compose.yml build
+ROS_DISTRO=foxy UBUNTU_CODENAME=focal docker compose -f docker/compose.yml run --rm ros2sample
 ```
 
 コンテナ内ではリポジトリが `/workspace/Ros2Sample` にマウントされます。
 
 ## CI
 
-GitHub Actions は `.github/workflows/ci.yml` で定義しています。Ubuntu 24.04 上に ROS 2 Lyrical と Jazzy を導入し、次を実行します。
+GitHub Actions は `.github/workflows/ci.yml` で定義しています。自動トリガーは無効のまま、手動実行 (`workflow_dispatch`) で Ubuntu 20.04/Foxy、Ubuntu 24.04/Lyrical、Ubuntu 24.04/Jazzy の基本検証を実行できます。
 
 1. `rosdep install`
 2. `./scripts/lint.sh`
@@ -249,4 +257,4 @@ source /opt/ros/rolling/setup.bash
 
 ## English summary
 
-Ros2Sample is a ROS 2 workspace for robot and drone examples. Documentation and tooling are Japanese-first, with Ubuntu 24.04 / 26.04 and ROS 2 Lyrical / Jazzy / Kilted / Rolling in mind. The default and CI-primary distribution is Lyrical Luth (May 2026 LTS). Use `scripts/build.sh`, `scripts/lint.sh`, and `scripts/rosdep-install.sh` for common development tasks.
+Ros2Sample is a ROS 2 workspace for robot and drone examples. Documentation and tooling are Japanese-first, with Ubuntu 20.04 / 24.04 / 26.04 and ROS 2 Foxy / Lyrical / Jazzy / Kilted / Rolling in mind. The default and CI-primary distribution is Lyrical Luth (May 2026 LTS). Use `scripts/build.sh`, `scripts/lint.sh`, and `scripts/rosdep-install.sh` for common development tasks.

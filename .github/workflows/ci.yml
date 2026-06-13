@@ -1,9 +1,12 @@
 name: ROS 2 CI
 
+# CI is temporarily disabled. Re-enable by restoring the push/pull_request triggers below.
+# on:
+#   push:
+#     branches: ["**"]
+#   pull_request:
 on:
-  push:
-    branches: ["**"]
-  pull_request:
+  workflow_dispatch:
 
 jobs:
   lyrical:

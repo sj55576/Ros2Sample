@@ -1,7 +1,7 @@
 # Ros2Sample
 
 **Ros2Sample** は、ROS 2 でロボット／ドローンのサンプルを学習・検証するためのワークスペースです。<br>
-このリポジトリは **日本語を第一言語** として、開発者が Ubuntu 24.04 / 26.04 と ROS 2 Jazzy / Kilted / Rolling の環境で、依存関係の取得、ビルド、実行、CI 検証を迷わず行えることを目標にしています。
+このリポジトリは **日本語を第一言語** として、開発者が Ubuntu 24.04 / 26.04 と ROS 2 Lyrical / Jazzy / Kilted / Rolling の環境で、依存関係の取得、ビルド、実行、CI 検証を迷わず行えることを目標にしています。
 
 > 現在は依存を軽くした Python ベースの地上ロボット／クアッドローターシミュレーションサンプルを `src/` 以下に収録しています。Gazebo 等の重いシミュレータに進む前に、ROS 2 の topic、launch、namespace、TF、センサー風データの流れを確認するための入口として使えます。
 
@@ -9,10 +9,10 @@
 
 | OS | ROS 2 | 用途 | 備考 |
 | --- | --- | --- | --- |
-| Ubuntu 24.04 LTS | Jazzy Jalisco | 推奨・CI 対象 | 安定版として最初に検証します。 |
+| Ubuntu 26.04 LTS | Lyrical Luth | 推奨・CI 対象 | 2026年5月リリースの新 LTS。サポート期間 2031年5月まで。 |
+| Ubuntu 24.04 LTS | Jazzy Jalisco | 安定版・CI 対象 | Lyrical でも Noble は 2029年まで引き続きサポートされます。 |
 | Ubuntu 24.04 LTS | Kilted Kaiju | 開発候補 | パッケージ互換性を確認しながら利用してください。 |
 | Ubuntu 24.04 / 26.04 | Rolling Ridley | 最新 API 検証 | API 変更が頻繁に入るため、CI 失敗時は変更内容を確認してください。 |
-| Ubuntu 26.04 | Kilted / Rolling | 将来対応 | ベースイメージや ROS 2 apt リポジトリの提供状況に依存します。 |
 
 ## リポジトリ構成
 
@@ -41,7 +41,7 @@
 
 ### 基本ツール
 
-Ubuntu 24.04/Jazzy の例です。Kilted/Rolling を使う場合は `ROS_DISTRO` を変更してください。
+Ubuntu 26.04/Lyrical の例です。Jazzy/Kilted/Rolling を使う場合は `ROS_DISTRO` を変更してください。
 
 ```bash
 sudo apt update
@@ -57,6 +57,10 @@ sudo apt install -y \
 ROS 2 の apt リポジトリ設定とインストールは、利用する ROS 2 ディストリビューションの公式手順に従ってください。インストール後、次のように環境を読み込みます。
 
 ```bash
+# Lyrical (推奨)
+source /opt/ros/lyrical/setup.bash
+
+# Jazzy
 source /opt/ros/jazzy/setup.bash
 ```
 
@@ -72,7 +76,7 @@ rosdep update
 ワークスペース依存関係を解決します。
 
 ```bash
-rosdep install --from-paths src --ignore-src -r -y --rosdistro jazzy
+rosdep install --from-paths src --ignore-src -r -y --rosdistro lyrical
 ```
 
 `src/` のパッケージが増えた場合も、`package.xml` に依存関係を追加していれば同じコマンドで解決できます。
@@ -86,11 +90,11 @@ cd Ros2Sample
 # 外部リポジトリ依存が追加された場合に利用します。
 vcs import src < ros2.repos
 
-# ROS 2 環境を読み込みます。
-source /opt/ros/jazzy/setup.bash
+# ROS 2 環境を読み込みます (Lyrical 推奨)。
+source /opt/ros/lyrical/setup.bash
 
 # 依存関係を解決します。
-./scripts/rosdep-install.sh jazzy
+./scripts/rosdep-install.sh lyrical
 ```
 
 `ros2.repos` は現在空に近いテンプレートです。外部 ROS 2 パッケージを固定したい場合は、`repositories:` 以下に追加してください。
@@ -173,18 +177,23 @@ RViz を使う場合は、ビルド後に `install/<package>/share/<package>/rvi
 
 ## Docker 開発環境
 
-Ubuntu 24.04 + ROS 2 Jazzy の開発コンテナを用意しています。
+Ubuntu 26.04 + ROS 2 Lyrical の開発コンテナを用意しています。
 
 ```bash
+# Lyrical (デフォルト・推奨)
 docker compose -f docker/compose.yml build
 docker compose -f docker/compose.yml run --rm ros2sample
+
+# Jazzy を使う場合
+ROS_DISTRO=jazzy UBUNTU_CODENAME=noble docker compose -f docker/compose.yml build
+ROS_DISTRO=jazzy docker compose -f docker/compose.yml run --rm ros2sample
 ```
 
 コンテナ内ではリポジトリが `/workspace/Ros2Sample` にマウントされます。
 
 ## CI
 
-GitHub Actions は `.github/workflows/ci.yml` で定義しています。Ubuntu 24.04 上に ROS 2 Jazzy を導入し、次を実行します。
+GitHub Actions は `.github/workflows/ci.yml` で定義しています。Ubuntu 24.04 上に ROS 2 Lyrical と Jazzy を導入し、次を実行します。
 
 1. `rosdep install`
 2. `./scripts/lint.sh`
@@ -229,10 +238,15 @@ rosdep update
 環境変数 `ROS_DISTRO` またはスクリプト引数で指定します。
 
 ```bash
+# Jazzy に切り替える例
+source /opt/ros/jazzy/setup.bash
+./scripts/rosdep-install.sh jazzy
+
+# Rolling に切り替える例
 source /opt/ros/rolling/setup.bash
 ./scripts/rosdep-install.sh rolling
 ```
 
 ## English summary
 
-Ros2Sample is a ROS 2 workspace for robot and drone examples. Documentation and tooling are Japanese-first, with Ubuntu 24.04 / 26.04 and ROS 2 Jazzy / Kilted / Rolling in mind. Use `scripts/build.sh`, `scripts/lint.sh`, and `scripts/rosdep-install.sh` for common development tasks.
+Ros2Sample is a ROS 2 workspace for robot and drone examples. Documentation and tooling are Japanese-first, with Ubuntu 24.04 / 26.04 and ROS 2 Lyrical / Jazzy / Kilted / Rolling in mind. The default and CI-primary distribution is Lyrical Luth (May 2026 LTS). Use `scripts/build.sh`, `scripts/lint.sh`, and `scripts/rosdep-install.sh` for common development tasks.

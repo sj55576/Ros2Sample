@@ -24,6 +24,7 @@ colcon test-result --verbose
 
 - **Lyrical Luth**: Ubuntu 26.04 を一次プラットフォームとする 2026年5月リリースの新 LTS です。CI の最優先ターゲットです。Ubuntu 24.04 (Noble) でも動作します。
 - **Jazzy**: Ubuntu 24.04 の安定版です。Jazzy は 2029年まで引き続きサポートされるため、CI でも検証を継続します。
+- **Foxy**: Ubuntu 20.04 の既存環境互換ターゲットです。EOL 済みのため新規採用は非推奨ですが、軽量 Python サンプルのビルド・実行互換性を維持します。Gazebo/GZ 連携は `ros_gz_*` パッケージ事情が異なるため対象外です。
 - **Kilted**: Jazzy/Lyrical からの差分を確認する開発候補です。
 - **Rolling**: 最新 API 確認用です。破壊的変更が入る可能性を前提に扱います。
 

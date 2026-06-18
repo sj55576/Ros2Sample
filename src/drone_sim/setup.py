@@ -26,6 +26,8 @@ setup(
     entry_points={
         'console_scripts': [
             'altitude_hold = drone_sim.altitude_hold:main',
+            'battery_monitor = drone_sim.battery_monitor:main',
+            'emergency_land = drone_sim.emergency_land:main',
             'sim_drone = drone_sim.sim_drone:main',
             'waypoint_commander = drone_sim.waypoint_commander:main',
         ],

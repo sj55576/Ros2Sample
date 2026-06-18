@@ -1,0 +1,7 @@
+# Request the current status of a robot.
+# No request fields needed — the server returns the latest snapshot.
+---
+# Response containing the robot's latest status.
+sample_interfaces/RobotStatus status
+bool success
+string message

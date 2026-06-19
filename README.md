@@ -33,8 +33,9 @@
 
 | パッケージ | 目的 | 主な実行ファイル |
 | --- | --- | --- |
-| `ground_robot_sim` | 差動二輪風の地上ロボット、LiDAR 風停止判定、閉ループウェイポイント追従、障害物回避、複数ロボット namespace の軽量サンプル | `ground_robot_node`, `diff_drive_patrol`, `lidar_obstacle_stop`, `lidar_obstacle_avoid`, `waypoint_follower` |
-| `drone_sim` | クアッドローター風の位置・高度制御、waypoint 指令、小規模 swarm namespace の軽量サンプル | `sim_drone`, `altitude_hold`, `waypoint_commander` |
+| `ground_robot_sim` | 差動二輪風の地上ロボット、LiDAR 風停止判定、PID閉ループウェイポイント追従、障害物回避、緊急停止サービス、複数ロボット namespace の軽量サンプル | `ground_robot_node`, `diff_drive_patrol`, `lidar_obstacle_stop`, `lidar_obstacle_avoid`, `waypoint_follower` |
+| `drone_sim` | クアッドローター風の位置・PID高度制御、waypoint 指令、バッテリーモニター、緊急着陸、小規模 swarm namespace の軽量サンプル | `sim_drone`, `altitude_hold`, `waypoint_commander`, `battery_monitor`, `emergency_land` |
+| `sample_interfaces` | カスタム msg / srv / action 定義（ROS 2 インターフェース定義の学習用） | _(ライブラリパッケージ：実行ファイルなし)_ |
 
 検出結果は `colcon list` で確認できます。
 
@@ -148,11 +149,21 @@ ros2 run ground_robot_sim lidar_obstacle_avoid
 # ドローン状態を publish するサンプル
 ros2 run drone_sim sim_drone
 
-# 高度維持コマンドを publish するサンプル
+# PID高度維持コマンドを publish するサンプル
 ros2 run drone_sim altitude_hold
 
 # waypoint 指令を publish するサンプル
 ros2 run drone_sim waypoint_commander
+
+# バッテリーモニター（電力消費シミュレーション）
+ros2 run drone_sim battery_monitor
+
+# 緊急着陸（バッテリー低下時の自動降下 + サービストリガー）
+ros2 run drone_sim emergency_land
+
+# 地上ロボットの緊急停止サービス呼び出し例
+ros2 service call /emergency_stop std_srvs/srv/Trigger
+ros2 service call /reset_emergency std_srvs/srv/Trigger
 
 # ノード一覧確認
 ros2 node list
@@ -171,9 +182,10 @@ ros2 launch ground_robot_sim waypoint_follower.launch.py
 ros2 launch ground_robot_sim lidar_obstacle_avoid.launch.py
 ros2 launch ground_robot_sim multi_robot.launch.py
 
-# ドローン: waypoint飛行、高度維持、小規模swarm
+# ドローン: waypoint飛行、高度維持、バッテリーデモ、小規模swarm
 ros2 launch drone_sim single_quad_waypoint.launch.py
 ros2 launch drone_sim altitude_hold.launch.py
+ros2 launch drone_sim battery_demo.launch.py
 ros2 launch drone_sim swarm.launch.py drone_count:=5
 ```
 
@@ -258,3 +270,5 @@ source /opt/ros/rolling/setup.bash
 ## English summary
 
 Ros2Sample is a ROS 2 workspace for robot and drone examples. Documentation and tooling are Japanese-first, with Ubuntu 20.04 / 24.04 / 26.04 and ROS 2 Foxy / Lyrical / Jazzy / Kilted / Rolling in mind. The default and CI-primary distribution is Lyrical Luth (May 2026 LTS). Use `scripts/build.sh`, `scripts/lint.sh`, and `scripts/rosdep-install.sh` for common development tasks.
+
+Packages include `ground_robot_sim` (diff-drive robot with synthetic LiDAR, PID waypoint following, emergency stop service), `drone_sim` (quadrotor with PID altitude hold, battery monitoring, emergency landing), and `sample_interfaces` (custom msg/srv/action definitions for learning ROS 2 interface design).

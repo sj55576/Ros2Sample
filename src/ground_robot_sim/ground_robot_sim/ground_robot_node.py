@@ -9,6 +9,7 @@ from ground_robot_sim.geometry import ray_circle_distance, yaw_to_quaternion
 from nav_msgs.msg import Odometry
 from rclpy.node import Node
 from sensor_msgs.msg import LaserScan
+from std_srvs.srv import Trigger
 from tf2_ros import TransformBroadcaster
 
 
@@ -57,11 +58,14 @@ class GroundRobotNode(Node):
         self.linear_velocity = 0.0
         self.angular_velocity = 0.0
         self.last_update_time = self.get_clock().now()
+        self._emergency_stopped = False
 
         self.odom_publisher = self.create_publisher(Odometry, 'odom', 10)
         self.scan_publisher = self.create_publisher(LaserScan, 'scan', 10)
         self.tf_broadcaster = TransformBroadcaster(self)
         self.create_subscription(Twist, 'cmd_vel', self.cmd_vel_callback, 10)
+        self.create_service(Trigger, 'emergency_stop', self._emergency_stop_callback)
+        self.create_service(Trigger, 'reset_emergency', self._reset_emergency_callback)
 
         publish_rate = max(1.0, float(self.get_parameter('publish_rate').value))
         scan_rate = max(1.0, float(self.get_parameter('scan_rate').value))
@@ -72,8 +76,32 @@ class GroundRobotNode(Node):
             f'with base frame {self.base_frame}'
         )
 
+    def _emergency_stop_callback(
+        self, request: Trigger.Request, response: Trigger.Response,
+    ) -> Trigger.Response:
+        """Activate emergency stop - zero all velocities and reject cmd_vel."""
+        self._emergency_stopped = True
+        self.linear_velocity = 0.0
+        self.angular_velocity = 0.0
+        response.success = True
+        response.message = 'Emergency stop activated'
+        self.get_logger().warn('Emergency stop activated!')
+        return response
+
+    def _reset_emergency_callback(
+        self, request: Trigger.Request, response: Trigger.Response,
+    ) -> Trigger.Response:
+        """Deactivate emergency stop - resume accepting cmd_vel."""
+        self._emergency_stopped = False
+        response.success = True
+        response.message = 'Emergency stop released'
+        self.get_logger().info('Emergency stop released')
+        return response
+
     def cmd_vel_callback(self, msg: Twist) -> None:
         """Store a bounded velocity command for the next integration tick."""
+        if self._emergency_stopped:
+            return
         self.linear_velocity = max(
             -self.max_linear_speed,
             min(self.max_linear_speed, msg.linear.x),

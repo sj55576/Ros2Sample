@@ -7,6 +7,7 @@ from typing import List, Tuple
 import rclpy
 from geometry_msgs.msg import Twist
 from ground_robot_sim.geometry import normalize_angle
+from ground_robot_sim.pid import PIDController
 from nav_msgs.msg import Odometry
 from rclpy.node import Node
 
@@ -40,7 +41,11 @@ class WaypointFollower(Node):
         self.declare_parameter('max_linear_speed', 0.4)
         self.declare_parameter('max_angular_speed', 1.2)
         self.declare_parameter('kp_linear', 0.8)
+        self.declare_parameter('ki_linear', 0.0)
+        self.declare_parameter('kd_linear', 0.2)
         self.declare_parameter('kp_angular', 1.5)
+        self.declare_parameter('ki_angular', 0.0)
+        self.declare_parameter('kd_angular', 0.1)
         self.declare_parameter('heading_gate_rad', 0.5)
         self.declare_parameter('publish_rate', 20.0)
 
@@ -54,10 +59,28 @@ class WaypointFollower(Node):
         self.arrival_time = None
         self._completed_logged: bool = False
 
+        kp_linear = float(self.get_parameter('kp_linear').value)
+        ki_linear = float(self.get_parameter('ki_linear').value)
+        kd_linear = float(self.get_parameter('kd_linear').value)
+        kp_angular = float(self.get_parameter('kp_angular').value)
+        ki_angular = float(self.get_parameter('ki_angular').value)
+        kd_angular = float(self.get_parameter('kd_angular').value)
+        max_linear = float(self.get_parameter('max_linear_speed').value)
+        max_angular = float(self.get_parameter('max_angular_speed').value)
+        self._linear_pid = PIDController(
+            kp_linear, ki_linear, kd_linear,
+            output_min=0.0, output_max=max_linear,
+        )
+        self._angular_pid = PIDController(
+            kp_angular, ki_angular, kd_angular,
+            output_min=-max_angular, output_max=max_angular,
+        )
+
         self.publisher = self.create_publisher(Twist, 'cmd_vel', 10)
         self.create_subscription(Odometry, 'odom', self._odom_callback, 10)
         rate = max(1.0, float(self.get_parameter('publish_rate').value))
-        self.create_timer(1.0 / rate, self.tick)
+        self._dt = 1.0 / rate
+        self.create_timer(self._dt, self.tick)
         self.get_logger().info(
             f'Loaded {len(self.waypoints)} waypoint(s); '
             f'starting at waypoint 0: {self.waypoints[0]}'
@@ -77,10 +100,6 @@ class WaypointFollower(Node):
         tolerance_m = float(self.get_parameter('tolerance_m').value)
         hold_time_sec = float(self.get_parameter('hold_time_sec').value)
         loop = bool(self.get_parameter('loop').value)
-        max_linear = float(self.get_parameter('max_linear_speed').value)
-        max_angular = float(self.get_parameter('max_angular_speed').value)
-        kp_linear = float(self.get_parameter('kp_linear').value)
-        kp_angular = float(self.get_parameter('kp_angular').value)
         heading_gate = float(self.get_parameter('heading_gate_rad').value)
 
         finished = self.current_index >= len(self.waypoints)
@@ -114,11 +133,12 @@ class WaypointFollower(Node):
         bearing = atan2(dy, dx)
         heading_error = normalize_angle(bearing - self.yaw)
 
-        angular = max(-max_angular, min(max_angular, kp_angular * heading_error))
+        angular = self._angular_pid.compute(heading_error, self._dt)
         if abs(heading_error) <= heading_gate:
-            linear = max(0.0, min(max_linear, kp_linear * distance))
+            linear = self._linear_pid.compute(distance, self._dt)
         else:
             linear = 0.0
+            self._linear_pid.reset()
 
         command.linear.x = linear
         command.angular.z = angular
@@ -127,6 +147,8 @@ class WaypointFollower(Node):
     def _advance_waypoint(self, loop: bool) -> None:
         """Move to the next waypoint or wrap around when looping."""
         self.arrival_time = None
+        self._linear_pid.reset()
+        self._angular_pid.reset()
         next_index = self.current_index + 1
         if next_index < len(self.waypoints):
             self.current_index = next_index

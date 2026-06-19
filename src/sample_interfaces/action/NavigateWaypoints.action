@@ -1,0 +1,17 @@
+# Navigate a robot through an ordered list of waypoints.
+
+# ---- Goal ----
+geometry_msgs/PoseStamped[] waypoints
+bool loop        # When true the robot repeats the waypoints indefinitely.
+float64 tolerance_m  # Distance threshold to consider a waypoint reached.
+---
+# ---- Result ----
+bool success
+uint32 waypoints_completed
+string message
+---
+# ---- Feedback ----
+uint32 current_index
+uint32 total_waypoints
+float64 distance_to_current
+geometry_msgs/Point current_position

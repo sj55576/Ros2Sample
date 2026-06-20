@@ -7,7 +7,9 @@ import rclpy
 from geometry_msgs.msg import PoseStamped, TransformStamped, Twist, Vector3
 from nav_msgs.msg import Odometry
 from rclpy.node import Node
-from sensor_msgs.msg import Imu
+from sample_interfaces.msg import RobotStatus
+from sample_interfaces.srv import GetRobotStatus
+from sensor_msgs.msg import BatteryState, Imu
 from tf2_ros import TransformBroadcaster
 
 from drone_sim.math_utils import clamp, normalize_angle, quat_from_euler
@@ -71,6 +73,12 @@ class SimDrone(Node):
         self.imu_pub = self.create_publisher(Imu, 'imu', 10)
         self.create_subscription(Twist, 'cmd_vel', self._on_cmd_vel, 10)
         self.create_subscription(PoseStamped, 'setpoint_pose', self._on_setpoint_pose, 10)
+        self._battery_pct: float = 100.0
+        self.status_pub = self.create_publisher(RobotStatus, 'robot_status', 10)
+        self.create_subscription(BatteryState, 'battery', self._on_battery, 10)
+        self.create_service(
+            GetRobotStatus, 'get_robot_status', self._get_status_callback
+        )
         self.tf_broadcaster = TransformBroadcaster(self)
 
         period = 1.0 / max(self.publish_rate_hz, 1.0)
@@ -86,6 +94,10 @@ class SimDrone(Node):
     def _on_setpoint_pose(self, msg: PoseStamped) -> None:
         self.setpoint = msg
         self.last_setpoint_time = self.get_clock().now()
+
+    def _on_battery(self, msg: BatteryState) -> None:
+        """Track the latest battery percentage."""
+        self._battery_pct = msg.percentage * 100.0
 
     def _step(self) -> None:
         now = self.get_clock().now()
@@ -140,6 +152,39 @@ class SimDrone(Node):
         setattr(self, attr, current + delta)
         return delta / dt
 
+    def _build_status(self) -> RobotStatus:
+        """Build the current robot status message."""
+        speed = (self.vx ** 2 + self.vy ** 2 + self.vz ** 2) ** 0.5
+        if speed > 0.05:
+            state = 'moving'
+        else:
+            state = 'idle'
+        status = RobotStatus()
+        status.header.stamp = self.get_clock().now().to_msg()
+        status.header.frame_id = self.frame_id
+        status.robot_name = self.get_fully_qualified_name()
+        status.state = state
+        status.battery_percentage = self._battery_pct
+        status.position.x = self.x
+        status.position.y = self.y
+        status.position.z = self.z
+        status.linear_velocity.x = self.vx
+        status.linear_velocity.y = self.vy
+        status.linear_velocity.z = self.vz
+        status.heading_rad = self.yaw
+        return status
+
+    def _get_status_callback(
+        self,
+        request: GetRobotStatus.Request,
+        response: GetRobotStatus.Response,
+    ) -> GetRobotStatus.Response:
+        """Return the current robot status."""
+        response.status = self._build_status()
+        response.success = True
+        response.message = 'OK'
+        return response
+
     def _publish_state(self, stamp) -> None:
         quat = quat_from_euler(0.0, 0.0, self.yaw)
 
@@ -181,6 +226,7 @@ class SimDrone(Node):
         transform.transform.translation.z = self.z
         transform.transform.rotation = odom.pose.pose.orientation
         self.tf_broadcaster.sendTransform(transform)
+        self.status_pub.publish(self._build_status())
 
 
 def main(args=None) -> None:

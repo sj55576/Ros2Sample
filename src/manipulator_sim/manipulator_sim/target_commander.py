@@ -1,9 +1,10 @@
 """Publish joint targets by converting planar tool targets through inverse kinematics."""
 
 from math import fabs
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 import rclpy
+from builtin_interfaces.msg import Time
 from manipulator_sim.kinematics import inverse_kinematics, parse_targets_xy
 from rclpy.node import Node
 from sensor_msgs.msg import JointState
@@ -77,7 +78,11 @@ class TargetCommander(Node):
         else:
             self.arrival_time = None
 
-    def _is_reached(self, target_joint_positions, tolerance: float) -> bool:
+    def _is_reached(
+        self,
+        target_joint_positions: Tuple[float, float],
+        tolerance: float,
+    ) -> bool:
         return (
             fabs(target_joint_positions[0] - self.current_joint_positions[0]) <= tolerance
             and fabs(target_joint_positions[1] - self.current_joint_positions[1]) <= tolerance
@@ -93,7 +98,11 @@ class TargetCommander(Node):
             f'Commanding target {self.current_index}: {self.joint_targets[self.current_index]}'
         )
 
-    def _publish_joint_target(self, stamp, target_joint_positions) -> None:
+    def _publish_joint_target(
+        self,
+        stamp: Time,
+        target_joint_positions: Tuple[float, float],
+    ) -> None:
         msg = JointState()
         msg.header.stamp = stamp
         msg.name = list(self.joint_names)

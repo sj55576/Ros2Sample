@@ -29,6 +29,7 @@ setup(
             'ground_robot_node = ground_robot_sim.ground_robot_node:main',
             'lidar_obstacle_avoid = ground_robot_sim.lidar_obstacle_avoid:main',
             'lidar_obstacle_stop = ground_robot_sim.lidar_obstacle_stop:main',
+            'navigate_waypoints_server = ground_robot_sim.navigate_waypoints_server:main',
             'waypoint_follower = ground_robot_sim.waypoint_follower:main',
         ],
     },

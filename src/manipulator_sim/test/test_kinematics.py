@@ -5,10 +5,12 @@ import math
 import pytest
 
 from manipulator_sim.kinematics import (
+    clamp,
     forward_kinematics,
     inverse_kinematics,
     parse_targets_xy,
     step_towards,
+    wrap_angle,
 )
 
 
@@ -51,3 +53,17 @@ def test_inverse_kinematics_elbow_branches_differ() -> None:
     _, theta2_down = inverse_kinematics(1.0, 0.1, 0.8, 0.6, elbow_up=False)
     _, theta2_up = inverse_kinematics(1.0, 0.1, 0.8, 0.6, elbow_up=True)
     assert math.copysign(1.0, theta2_down) != math.copysign(1.0, theta2_up)
+
+
+def test_clamp_limits_to_boundaries() -> None:
+    """clamp should keep values inside the given range bounds."""
+    assert clamp(0.5, 0.0, 1.0) == pytest.approx(0.5)
+    assert clamp(-0.2, 0.0, 1.0) == pytest.approx(0.0)
+    assert clamp(1.2, 0.0, 1.0) == pytest.approx(1.0)
+
+
+def test_wrap_angle_normalizes_into_pi_range() -> None:
+    """wrap_angle should normalize angles to [-pi, pi]."""
+    assert wrap_angle(3.0 * math.pi) == pytest.approx(math.pi)
+    assert wrap_angle(-3.0 * math.pi) == pytest.approx(-math.pi)
+    assert wrap_angle(0.0) == pytest.approx(0.0)

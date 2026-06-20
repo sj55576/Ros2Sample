@@ -60,27 +60,27 @@ class TargetCommander(Node):
 
     def _tick(self) -> None:
         now = self.get_clock().now()
-        command = self.joint_targets[self.current_index]
-        self._publish_joint_target(now.to_msg(), command)
+        target_joint_positions = self.joint_targets[self.current_index]
+        self._publish_joint_target(now.to_msg(), target_joint_positions)
 
         tolerance = float(self.get_parameter('tolerance_rad').value)
         hold_time = float(self.get_parameter('hold_time_sec').value)
-        if self._is_reached(command, tolerance):
+        if self._is_reached(target_joint_positions, tolerance):
             if self.arrival_time is None:
                 self.arrival_time = now
                 self.get_logger().info(
                     f'Reached target {self.current_index}: '
-                    f'({command[0]:.3f}, {command[1]:.3f})'
+                    f'({target_joint_positions[0]:.3f}, {target_joint_positions[1]:.3f})'
                 )
             elif (now - self.arrival_time).nanoseconds * 1e-9 >= hold_time:
                 self._advance_target()
         else:
             self.arrival_time = None
 
-    def _is_reached(self, command, tolerance: float) -> bool:
+    def _is_reached(self, target_joint_positions, tolerance: float) -> bool:
         return (
-            fabs(command[0] - self.current_joint_positions[0]) <= tolerance
-            and fabs(command[1] - self.current_joint_positions[1]) <= tolerance
+            fabs(target_joint_positions[0] - self.current_joint_positions[0]) <= tolerance
+            and fabs(target_joint_positions[1] - self.current_joint_positions[1]) <= tolerance
         )
 
     def _advance_target(self) -> None:
@@ -93,11 +93,11 @@ class TargetCommander(Node):
             f'Commanding target {self.current_index}: {self.joint_targets[self.current_index]}'
         )
 
-    def _publish_joint_target(self, stamp, command) -> None:
+    def _publish_joint_target(self, stamp, target_joint_positions) -> None:
         msg = JointState()
         msg.header.stamp = stamp
         msg.name = list(self.joint_names)
-        msg.position = [float(command[0]), float(command[1])]
+        msg.position = [float(target_joint_positions[0]), float(target_joint_positions[1])]
         self._command_pub.publish(msg)
 
 

@@ -12,7 +12,7 @@ from tf2_ros import TransformBroadcaster
 
 
 def _yaw_to_quat_components(yaw_rad: float) -> tuple[float, float]:
-    """Return (z, w) quaternion components for a pure yaw rotation."""
+    """Return quaternion (z, w) for yaw-only rotation where x and y are zero."""
     half = 0.5 * yaw_rad
     return math.sin(half), math.cos(half)
 

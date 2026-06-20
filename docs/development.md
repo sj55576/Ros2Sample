@@ -34,6 +34,7 @@ colcon test-result --verbose
 | --- | --- |
 | `ground_robot_sim` | 地上ロボット向けの軽量 ROS 2 Python サンプルです。 |
 | `drone_sim` | ドローン向けの軽量 ROS 2 Python サンプルです。 |
+| `manipulator_sim` | 2自由度平面マニピュレータ向けの軽量 ROS 2 Python サンプルです。 |
 
 ## パッケージ追加時のチェックリスト
 

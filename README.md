@@ -35,6 +35,7 @@
 | --- | --- | --- |
 | `ground_robot_sim` | 差動二輪風の地上ロボット、LiDAR 風停止判定、PID閉ループウェイポイント追従、障害物回避、緊急停止サービス、複数ロボット namespace の軽量サンプル | `ground_robot_node`, `diff_drive_patrol`, `lidar_obstacle_stop`, `lidar_obstacle_avoid`, `waypoint_follower` |
 | `drone_sim` | クアッドローター風の位置・PID高度制御、waypoint 指令、バッテリーモニター、緊急着陸、小規模 swarm namespace の軽量サンプル | `sim_drone`, `altitude_hold`, `waypoint_commander`, `battery_monitor`, `emergency_land` |
+| `manipulator_sim` | 2自由度平面マニピュレータの JointState / TF / 目標姿勢追従を学ぶ軽量サンプル | `manipulator_simulator`, `target_commander` |
 | `sample_interfaces` | カスタム msg / srv / action 定義（ROS 2 インターフェース定義の学習用） | _(ライブラリパッケージ：実行ファイルなし)_ |
 
 検出結果は `colcon list` で確認できます。
@@ -161,6 +162,12 @@ ros2 run drone_sim battery_monitor
 # 緊急着陸（バッテリー低下時の自動降下 + サービストリガー）
 ros2 run drone_sim emergency_land
 
+# マニピュレータの状態 publish サンプル
+ros2 run manipulator_sim manipulator_simulator
+
+# 平面ターゲット列から関節指令を publish するサンプル
+ros2 run manipulator_sim target_commander
+
 # 地上ロボットの緊急停止サービス呼び出し例
 ros2 service call /emergency_stop std_srvs/srv/Trigger
 ros2 service call /reset_emergency std_srvs/srv/Trigger
@@ -187,6 +194,9 @@ ros2 launch drone_sim single_quad_waypoint.launch.py
 ros2 launch drone_sim altitude_hold.launch.py
 ros2 launch drone_sim battery_demo.launch.py
 ros2 launch drone_sim swarm.launch.py drone_count:=5
+
+# マニピュレータ: 平面到達デモ（JointState / TF / tool pose）
+ros2 launch manipulator_sim planar_reach_demo.launch.py
 ```
 
 RViz を使う場合は、ビルド後に `install/<package>/share/<package>/rviz/` 以下の設定ファイルを開いてください。

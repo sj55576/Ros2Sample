@@ -1,0 +1,21 @@
+manipulator_simulator:
+  ros__parameters:
+    frame_id: base_link
+    link1_frame_id: link1
+    tool_frame_id: tool0
+    joint_names: [joint1, joint2]
+    link_lengths: [0.8, 0.6]
+    initial_joint_positions: [0.0, 0.0]
+    max_joint_speed: 1.2
+    publish_rate_hz: 30.0
+
+target_commander:
+  ros__parameters:
+    joint_names: [joint1, joint2]
+    link_lengths: [0.8, 0.6]
+    publish_rate_hz: 10.0
+    hold_time_sec: 1.0
+    tolerance_rad: 0.03
+    loop: true
+    elbow_up: false
+    targets_xy: [1.0, 0.2, 0.7, 0.8, 0.3, 0.7, 1.2, -0.1]

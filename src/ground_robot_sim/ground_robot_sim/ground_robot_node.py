@@ -9,6 +9,8 @@ from ground_robot_sim.geometry import ray_circle_distance, yaw_to_quaternion
 from nav_msgs.msg import Odometry
 from rclpy.node import Node
 from sensor_msgs.msg import LaserScan
+from sample_interfaces.msg import RobotStatus
+from sample_interfaces.srv import GetRobotStatus
 from std_srvs.srv import Trigger
 from tf2_ros import TransformBroadcaster
 
@@ -62,10 +64,12 @@ class GroundRobotNode(Node):
 
         self.odom_publisher = self.create_publisher(Odometry, 'odom', 10)
         self.scan_publisher = self.create_publisher(LaserScan, 'scan', 10)
+        self.status_pub = self.create_publisher(RobotStatus, 'robot_status', 10)
         self.tf_broadcaster = TransformBroadcaster(self)
         self.create_subscription(Twist, 'cmd_vel', self.cmd_vel_callback, 10)
         self.create_service(Trigger, 'emergency_stop', self._emergency_stop_callback)
         self.create_service(Trigger, 'reset_emergency', self._reset_emergency_callback)
+        self.create_service(GetRobotStatus, 'get_robot_status', self._get_status_callback)
 
         publish_rate = max(1.0, float(self.get_parameter('publish_rate').value))
         scan_rate = max(1.0, float(self.get_parameter('scan_rate').value))
@@ -110,6 +114,37 @@ class GroundRobotNode(Node):
             -self.max_angular_speed,
             min(self.max_angular_speed, msg.angular.z),
         )
+
+    def _build_status(self) -> RobotStatus:
+        status = RobotStatus()
+        status.header.stamp = self.get_clock().now().to_msg()
+        status.header.frame_id = self.odom_frame
+        status.robot_name = self.robot_name or self.get_fully_qualified_name()
+        if self._emergency_stopped:
+            status.state = 'emergency_stop'
+        elif abs(self.linear_velocity) > 0.01 or abs(self.angular_velocity) > 0.01:
+            status.state = 'moving'
+        else:
+            status.state = 'idle'
+        status.battery_percentage = 100.0
+        status.position.x = self.x
+        status.position.y = self.y
+        status.position.z = 0.0
+        status.linear_velocity.x = self.linear_velocity
+        status.linear_velocity.y = 0.0
+        status.linear_velocity.z = 0.0
+        status.heading_rad = self.yaw
+        return status
+
+    def _get_status_callback(
+        self,
+        request: GetRobotStatus.Request,
+        response: GetRobotStatus.Response,
+    ) -> GetRobotStatus.Response:
+        response.status = self._build_status()
+        response.success = True
+        response.message = 'OK'
+        return response
 
     def update_state(self) -> None:
         """Integrate diff-drive motion and publish odometry plus odom->base TF."""
@@ -158,6 +193,7 @@ class GroundRobotNode(Node):
         laser_transform.transform.translation.z = 0.12
         laser_transform.transform.rotation.w = 1.0
         self.tf_broadcaster.sendTransform(laser_transform)
+        self.status_pub.publish(self._build_status())
 
     def publish_scan(self) -> None:
         """Publish a simple 180-degree scan against circular obstacles and world walls."""

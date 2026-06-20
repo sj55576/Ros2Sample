@@ -4,6 +4,7 @@ import math
 from typing import List, Optional, Tuple
 
 import rclpy
+from builtin_interfaces.msg import Time
 from geometry_msgs.msg import PoseStamped, TransformStamped
 from manipulator_sim.kinematics import forward_kinematics, step_towards
 from rclpy.node import Node
@@ -83,14 +84,14 @@ class ManipulatorSimulator(Node):
         self._publish_tool_pose(now)
         self._publish_tf(now)
 
-    def _publish_joint_state(self, stamp) -> None:
+    def _publish_joint_state(self, stamp: Time) -> None:
         msg = JointState()
         msg.header.stamp = stamp
         msg.name = list(self.joint_names)
         msg.position = list(self.current_joint_positions)
         self._joint_pub.publish(msg)
 
-    def _publish_tool_pose(self, stamp) -> None:
+    def _publish_tool_pose(self, stamp: Time) -> None:
         theta1, theta2 = self.current_joint_positions
         l1, l2 = self.link_lengths
         x, y = forward_kinematics(theta1, theta2, l1, l2)
@@ -106,7 +107,7 @@ class ManipulatorSimulator(Node):
         pose.pose.orientation.w = w
         self._tool_pose_pub.publish(pose)
 
-    def _publish_tf(self, stamp) -> None:
+    def _publish_tf(self, stamp: Time) -> None:
         theta1, theta2 = self.current_joint_positions
         l1, _ = self.link_lengths
 

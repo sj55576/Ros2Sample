@@ -50,7 +50,8 @@ def inverse_kinematics(
     if radius > l1 + l2 or radius < abs(l1 - l2):
         raise ValueError(f'target ({x:.3f}, {y:.3f}) is unreachable')
 
-    c2 = clamp((x * x + y * y - l1 * l1 - l2 * l2) / (2.0 * l1 * l2), -1.0, 1.0)
+    radius_sq = radius * radius
+    c2 = clamp((radius_sq - l1 * l1 - l2 * l2) / (2.0 * l1 * l2), -1.0, 1.0)
     s2_abs = math.sqrt(max(0.0, 1.0 - c2 * c2))
     s2 = -s2_abs if elbow_up else s2_abs
 

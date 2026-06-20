@@ -9,7 +9,7 @@ from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
 
-def generate_launch_description():
+def generate_launch_description() -> LaunchDescription:
     share_dir = get_package_share_directory('manipulator_sim')
     default_config = join(share_dir, 'config', 'planar_reach_demo.yaml')
 

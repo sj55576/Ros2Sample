@@ -1,7 +1,7 @@
 """Publish joint targets by converting planar tool targets through inverse kinematics."""
 
 from math import fabs
-from typing import List
+from typing import List, Optional
 
 import rclpy
 from manipulator_sim.kinematics import inverse_kinematics, parse_targets_xy
@@ -101,7 +101,7 @@ class TargetCommander(Node):
         self._command_pub.publish(msg)
 
 
-def main(args: List[str] | None = None) -> None:
+def main(args: Optional[List[str]] = None) -> None:
     """Run the target commander node."""
     rclpy.init(args=args)
     node = TargetCommander()

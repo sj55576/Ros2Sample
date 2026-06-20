@@ -1,7 +1,7 @@
 """Planar manipulator simulator publishing joint states, TF, and tool pose."""
 
 import math
-from typing import List
+from typing import List, Optional, Tuple
 
 import rclpy
 from geometry_msgs.msg import PoseStamped, TransformStamped
@@ -11,7 +11,7 @@ from sensor_msgs.msg import JointState
 from tf2_ros import TransformBroadcaster
 
 
-def _yaw_to_quat_components(yaw_rad: float) -> tuple[float, float]:
+def _yaw_to_quat_zw(yaw_rad: float) -> Tuple[float, float]:
     """Return quaternion (z, w) for yaw-only rotation where x and y are zero."""
     half = 0.5 * yaw_rad
     return math.sin(half), math.cos(half)
@@ -101,7 +101,7 @@ class ManipulatorSimulator(Node):
         pose.pose.position.x = x
         pose.pose.position.y = y
         pose.pose.position.z = 0.0
-        z, w = _yaw_to_quat_components(theta1 + theta2)
+        z, w = _yaw_to_quat_zw(theta1 + theta2)
         pose.pose.orientation.z = z
         pose.pose.orientation.w = w
         self._tool_pose_pub.publish(pose)
@@ -117,7 +117,7 @@ class ManipulatorSimulator(Node):
         base_to_link1.transform.translation.x = 0.0
         base_to_link1.transform.translation.y = 0.0
         base_to_link1.transform.translation.z = 0.0
-        z1, w1 = _yaw_to_quat_components(theta1)
+        z1, w1 = _yaw_to_quat_zw(theta1)
         base_to_link1.transform.rotation.z = z1
         base_to_link1.transform.rotation.w = w1
 
@@ -128,14 +128,14 @@ class ManipulatorSimulator(Node):
         link1_to_tool.transform.translation.x = l1
         link1_to_tool.transform.translation.y = 0.0
         link1_to_tool.transform.translation.z = 0.0
-        z2, w2 = _yaw_to_quat_components(theta2)
+        z2, w2 = _yaw_to_quat_zw(theta2)
         link1_to_tool.transform.rotation.z = z2
         link1_to_tool.transform.rotation.w = w2
 
         self._tf_broadcaster.sendTransform([base_to_link1, link1_to_tool])
 
 
-def main(args: List[str] | None = None) -> None:
+def main(args: Optional[List[str]] = None) -> None:
     """Run the manipulator simulator node."""
     rclpy.init(args=args)
     node = ManipulatorSimulator()

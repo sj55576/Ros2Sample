@@ -201,6 +201,10 @@ ros2 launch manipulator_sim planar_reach_demo.launch.py
 
 RViz を使う場合は、ビルド後に `install/<package>/share/<package>/rviz/` 以下の設定ファイルを開いてください。
 
+## 詳細仕様ドキュメント
+
+ROSシミュレーションの挙動、topic / service / action、launch シナリオ、主要パラメータは [`docs/simulation_spec.md`](docs/simulation_spec.md) にまとめています。
+
 ## Docker 開発環境
 
 Ubuntu 26.04 + ROS 2 Lyrical の開発コンテナを既定にしています。Ubuntu 20.04 + ROS 2 Foxy など、ROS 2 公式 Docker イメージに存在する組み合わせも `ROS_DISTRO` と `UBUNTU_CODENAME` で指定できます。

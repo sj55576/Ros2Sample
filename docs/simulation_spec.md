@@ -2,6 +2,8 @@
 
 この文書は、Ros2Sample に含まれる ROS 2 サンプルの「シミュレーションで何が起きるか」と「各サンプルの詳細仕様」をまとめたものです。Gazebo などの重量級物理エンジンを前提にせず、ROS 2 の topic、service、action、launch、namespace、TF、センサー風データの流れを短時間で確認するための軽量シミュレーションを対象にしています。
 
+ノード間接続、制御式、入力検証、失敗モード、受け入れ確認については [implementation_spec.md](implementation_spec.md) を参照してください。
+
 ## 1. 全体像
 
 ### 1.1 収録パッケージ

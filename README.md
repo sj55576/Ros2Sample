@@ -5,6 +5,10 @@
 
 > 現在は依存を軽くした Python ベースの地上ロボット／クアッドローターシミュレーションサンプルを `src/` 以下に収録しています。Gazebo 等の重いシミュレータに進む前に、ROS 2 の topic、launch、namespace、TF、センサー風データの流れを確認するための入口として使えます。
 
+![Ros2Sample の構成イメージ](docs/assets/ros2-sample-overview.png)
+
+> この画像は GPT Image 2 で生成した概念図です。厳密なノード接続、topic 名、TF 構成は下記の仕様書を参照してください。
+
 ## 対象環境
 
 | OS | ROS 2 | 用途 | 備考 |
@@ -203,7 +207,11 @@ RViz を使う場合は、ビルド後に `install/<package>/share/<package>/rvi
 
 ## 詳細仕様ドキュメント
 
-ROSシミュレーションの挙動、topic / service / action、launch シナリオ、主要パラメータは [`docs/simulation_spec.md`](docs/simulation_spec.md) にまとめています。
+| 文書 | 対象読者 | 内容 |
+| --- | --- | --- |
+| [`docs/simulation_spec.md`](docs/simulation_spec.md) | 利用者 | 各デモで観測できる挙動、topic / service / action、主要パラメータ |
+| [`docs/implementation_spec.md`](docs/implementation_spec.md) | 実装者・レビュー担当 | ノード接続、制御式、実装上の制約、異常系、受け入れ確認 |
+| [`docs/development.md`](docs/development.md) | コントリビューター | ビルド、テスト、パッケージ追加時の更新手順 |
 
 ## Docker 開発環境
 

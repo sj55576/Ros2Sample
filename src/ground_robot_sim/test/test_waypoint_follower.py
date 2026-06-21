@@ -34,3 +34,9 @@ def test_parse_waypoints_xy_converts_values_to_float():
     result = parse_waypoints_xy([1, 2, 3, 4])
     assert result == [(1.0, 2.0), (3.0, 4.0)]
     assert all(isinstance(value, float) for pair in result for value in pair)
+
+
+def test_parse_waypoints_xy_rejects_non_finite_values():
+    """NaN or infinite waypoint components are rejected before control starts."""
+    with pytest.raises(ValueError, match='finite values'):
+        parse_waypoints_xy([0.0, float('inf')])

@@ -14,12 +14,17 @@ def clamp(value: float, lower: float, upper: float) -> float:
 
 
 def parse_targets_xy(raw_targets: Sequence[float]) -> List[Point2]:
-    """Parse a flat [x1, y1, x2, y2, ...] sequence into (x, y) tuples."""
+    """Parse a flat [x1, y1, x2, y2, ...] sequence into finite (x, y) tuples."""
     if len(raw_targets) < 2 or len(raw_targets) % 2 != 0:
         raise ValueError('targets_xy must contain one or more (x, y) pairs')
+
+    values = [float(value) for value in raw_targets]
+    if not all(math.isfinite(value) for value in values):
+        raise ValueError('targets_xy must contain only finite values')
+
     return [
-        (float(raw_targets[index]), float(raw_targets[index + 1]))
-        for index in range(0, len(raw_targets), 2)
+        (values[index], values[index + 1])
+        for index in range(0, len(values), 2)
     ]
 
 
@@ -46,6 +51,12 @@ def inverse_kinematics(
 
     Raises ValueError when the target is outside the reachable annulus.
     """
+    values = (x, y, l1, l2)
+    if not all(math.isfinite(value) for value in values):
+        raise ValueError('inverse kinematics inputs must be finite')
+    if l1 <= 0.0 or l2 <= 0.0:
+        raise ValueError('link lengths must be positive')
+
     radius = math.hypot(x, y)
     if radius > l1 + l2 or radius < abs(l1 - l2):
         raise ValueError(f'target ({x:.3f}, {y:.3f}) is unreachable')

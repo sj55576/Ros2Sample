@@ -88,3 +88,15 @@ def test_ray_circle_distance_miss():
     # Ray along +y starting at origin; circle at (2, 0, 0.5) is off to the side.
     dist = ray_circle_distance(0.0, 0.0, 0.0, 1.0, (2.0, 0.0, 0.5))
     assert math.isinf(dist)
+
+
+def test_parse_circles_rejects_non_finite_values():
+    """Obstacle definitions should reject NaN or infinite values."""
+    with pytest.raises(ValueError, match='finite values'):
+        parse_circles([0.0, float('inf'), 0.5])
+
+
+def test_parse_circles_rejects_non_positive_radius():
+    """Obstacle radii must be positive to avoid invalid range simulation geometry."""
+    with pytest.raises(ValueError, match='radii must be positive'):
+        parse_circles([0.0, 0.0, 0.0])

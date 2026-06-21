@@ -67,3 +67,17 @@ def test_wrap_angle_normalizes_into_pi_range() -> None:
     assert wrap_angle(3.0 * math.pi) == pytest.approx(math.pi)
     assert wrap_angle(-3.0 * math.pi) == pytest.approx(-math.pi)
     assert wrap_angle(0.0) == pytest.approx(0.0)
+
+
+def test_parse_targets_xy_rejects_non_finite_values() -> None:
+    """NaN or infinite target coordinates should fail validation."""
+    with pytest.raises(ValueError, match='finite values'):
+        parse_targets_xy([0.5, float('nan')])
+
+
+def test_inverse_kinematics_rejects_invalid_inputs() -> None:
+    """IK should fail fast for non-finite coordinates and invalid link lengths."""
+    with pytest.raises(ValueError, match='finite'):
+        inverse_kinematics(float('inf'), 0.0, 0.8, 0.6)
+    with pytest.raises(ValueError, match='link lengths must be positive'):
+        inverse_kinematics(0.1, 0.0, 0.0, 0.6)

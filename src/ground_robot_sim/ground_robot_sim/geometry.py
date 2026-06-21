@@ -46,8 +46,12 @@ def ray_circle_distance(
 
 
 def parse_circles(raw_values: Sequence[float]) -> List[Circle]:
-    """Parse [x, y, radius, ...] parameter values into circle tuples."""
+    """Parse [x, y, radius, ...] parameter values into finite circle tuples."""
     values = [float(value) for value in raw_values]
     if len(values) % 3 != 0:
         raise ValueError('obstacles parameter length must be a multiple of 3')
+    if not all(math.isfinite(value) for value in values):
+        raise ValueError('obstacles parameter must contain only finite values')
+    if any(values[i + 2] <= 0.0 for i in range(0, len(values), 3)):
+        raise ValueError('obstacle radii must be positive')
     return [(values[i], values[i + 1], values[i + 2]) for i in range(0, len(values), 3)]

@@ -28,3 +28,9 @@ def test_parse_waypoints_values_are_floats():
     """Parsed waypoint components are Python floats."""
     result = parse_waypoints([1, 2, 3])
     assert all(isinstance(v, float) for triple in result for v in triple)
+
+
+def test_parse_waypoints_rejects_non_finite_values():
+    """NaN or infinite waypoint components are rejected before node startup."""
+    with pytest.raises(ValueError, match='finite values'):
+        parse_waypoints([0.0, float('nan'), 1.0])

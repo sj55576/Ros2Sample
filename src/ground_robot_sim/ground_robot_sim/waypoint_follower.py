@@ -23,7 +23,12 @@ def parse_waypoints_xy(raw: List[float]) -> List[Tuple[float, float]]:
             'waypoints must be a non-empty flat list of (x, y) pairs '
             f'with even length; got length {len(raw)}'
         )
-    return [(float(raw[i]), float(raw[i + 1])) for i in range(0, len(raw), 2)]
+
+    values = [float(value) for value in raw]
+    if not all(math.isfinite(value) for value in values):
+        raise ValueError('waypoints must contain only finite values')
+
+    return [(values[i], values[i + 1]) for i in range(0, len(values), 2)]
 
 
 class WaypointFollower(Node):

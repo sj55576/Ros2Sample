@@ -1,0 +1,40 @@
+/**:
+  ros__parameters:
+    use_sim_time: false
+
+/sim_drone:
+  ros__parameters:
+    publish_rate_hz: 50.0
+    initial_z: 0.0
+
+/waypoint_commander:
+  ros__parameters:
+    waypoints: [0.0, 0.0, 2.0, 3.0, 0.0, 2.0, 3.0, 3.0, 2.0, 0.0, 3.0, 2.0]
+    tolerance_m: 0.3
+    hold_time_sec: 1.5
+    loop: true
+
+/wind_disturbance:
+  ros__parameters:
+    base_wind_x: 0.4
+    base_wind_y: 0.2
+    base_wind_z: 0.0
+    gust_amplitude: 0.5
+    gust_period_sec: 10.0
+    turbulence_intensity: 0.15
+    publish_rate_hz: 10.0
+
+/geofence_monitor:
+  ros__parameters:
+    boundary_min_x: -5.0
+    boundary_max_x: 8.0
+    boundary_min_y: -5.0
+    boundary_max_y: 8.0
+    boundary_min_z: 0.0
+    boundary_max_z: 5.0
+    margin_m: 0.5
+
+/telemetry_logger:
+  ros__parameters:
+    log_interval_sec: 5.0
+    publish_rate_hz: 1.0

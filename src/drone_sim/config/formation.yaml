@@ -1,0 +1,47 @@
+/**:
+  ros__parameters:
+    use_sim_time: false
+
+/leader:
+  /sim_drone:
+    ros__parameters:
+      publish_rate_hz: 50.0
+      initial_x: 0.0
+      initial_y: 0.0
+      initial_z: 0.0
+  /waypoint_commander:
+    ros__parameters:
+      waypoints: [0.0, 0.0, 2.0, 4.0, 0.0, 2.0, 4.0, 4.0, 2.0, 0.0, 4.0, 2.0]
+      tolerance_m: 0.3
+      hold_time_sec: 1.0
+      loop: true
+
+/follower_1:
+  /sim_drone:
+    ros__parameters:
+      publish_rate_hz: 50.0
+      initial_x: 2.0
+      initial_y: 0.0
+      initial_z: 0.0
+  /formation_controller:
+    ros__parameters:
+      leader_odom_topic: /leader/odom
+      offset_x: 2.0
+      offset_y: 0.0
+      offset_z: 0.0
+      smoothing_gain: 0.7
+
+/follower_2:
+  /sim_drone:
+    ros__parameters:
+      publish_rate_hz: 50.0
+      initial_x: 0.0
+      initial_y: 2.0
+      initial_z: 0.0
+  /formation_controller:
+    ros__parameters:
+      leader_odom_topic: /leader/odom
+      offset_x: 0.0
+      offset_y: 2.0
+      offset_z: 0.0
+      smoothing_gain: 0.7

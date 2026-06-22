@@ -10,6 +10,7 @@ from rclpy.node import Node
 from sample_interfaces.msg import RobotStatus
 from sample_interfaces.srv import GetRobotStatus
 from sensor_msgs.msg import BatteryState, Imu
+from std_msgs.msg import Bool
 from tf2_ros import TransformBroadcaster
 
 from drone_sim.math_utils import clamp, normalize_angle, quat_from_euler
@@ -67,12 +68,21 @@ class SimDrone(Node):
         self.setpoint: Optional[PoseStamped] = None
         self.last_setpoint_time = self.get_clock().now()
         self.last_update_time = self.get_clock().now()
+        self.wind_x = 0.0
+        self.wind_y = 0.0
+        self.wind_z = 0.0
+        self._geofence_breached = False
 
         self.odom_pub = self.create_publisher(Odometry, 'odom', 10)
         self.pose_pub = self.create_publisher(PoseStamped, 'pose', 10)
         self.imu_pub = self.create_publisher(Imu, 'imu', 10)
         self.create_subscription(Twist, 'cmd_vel', self._on_cmd_vel, 10)
         self.create_subscription(PoseStamped, 'setpoint_pose', self._on_setpoint_pose, 10)
+        self.create_subscription(Vector3, 'wind_velocity', self._on_wind, 10)
+        self.create_subscription(Bool, 'geofence_breach', self._on_geofence_breach, 10)
+        self.create_subscription(
+            PoseStamped, 'geofence_setpoint', self._on_geofence_setpoint, 10
+        )
         self._battery_pct: float = 100.0
         self.status_pub = self.create_publisher(RobotStatus, 'robot_status', 10)
         self.create_subscription(BatteryState, 'battery', self._on_battery, 10)
@@ -95,6 +105,19 @@ class SimDrone(Node):
         self.setpoint = msg
         self.last_setpoint_time = self.get_clock().now()
 
+    def _on_wind(self, msg: Vector3) -> None:
+        self.wind_x = msg.x
+        self.wind_y = msg.y
+        self.wind_z = msg.z
+
+    def _on_geofence_breach(self, msg: Bool) -> None:
+        self._geofence_breached = msg.data
+
+    def _on_geofence_setpoint(self, msg: PoseStamped) -> None:
+        if self._geofence_breached:
+            self.setpoint = msg
+            self.last_setpoint_time = self.get_clock().now()
+
     def _on_battery(self, msg: BatteryState) -> None:
         """Track the latest battery percentage."""
         self._battery_pct = msg.percentage * 100.0
@@ -115,9 +138,9 @@ class SimDrone(Node):
         self.last_az = self._approach_velocity('vz', desired_vz, self.linear_accel_limit, dt)
         self._approach_velocity('yaw_rate', desired_yaw_rate, self.yaw_accel_limit, dt)
 
-        self.x += self.vx * dt
-        self.y += self.vy * dt
-        self.z = max(0.0, self.z + self.vz * dt)
+        self.x += (self.vx + self.wind_x) * dt
+        self.y += (self.vy + self.wind_y) * dt
+        self.z = max(0.0, (self.z + (self.vz + self.wind_z) * dt))
         self.yaw = normalize_angle(self.yaw + self.yaw_rate * dt)
 
         self._publish_state(now)

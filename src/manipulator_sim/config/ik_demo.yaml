@@ -1,0 +1,18 @@
+manipulator_simulator:
+  ros__parameters:
+    frame_id: base_link
+    link1_frame_id: link1
+    tool_frame_id: tool0
+    joint_names: [joint1, joint2]
+    link_lengths: [0.8, 0.6]
+    initial_joint_positions: [0.5, -0.3]
+    max_joint_speed: 1.2
+    publish_rate_hz: 30.0
+
+ik_target_commander:
+  ros__parameters:
+    link_lengths: [0.8, 0.6]
+    joint_names: [joint1, joint2]
+    elbow_up: true
+    publish_rate_hz: 30.0
+    clamp_to_workspace: true

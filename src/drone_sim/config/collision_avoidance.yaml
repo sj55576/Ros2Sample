@@ -1,0 +1,13 @@
+collision_avoidance:
+  ros__parameters:
+    drone_odom_topics:
+      - /drone_1/odom
+      - /drone_2/odom
+      - /drone_3/odom
+    own_odom_topic: /drone_1/odom
+    safety_distance: 0.5
+    influence_distance: 3.0
+    repulsion_gain: 1.5
+    max_adjustment: 2.0
+    publish_rate_hz: 10.0
+    frame_id: odom

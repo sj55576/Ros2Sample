@@ -30,6 +30,10 @@ flowchart LR
     AH["altitude_hold"] -->|cmd_vel| DS
     DS -->|odom| AH
     DS --> DOUT["odom / pose / imu / robot_status / TF"]
+    WD["wind_disturbance"] -->|wind_velocity| DS
+    GM["geofence_monitor"] -->|geofence_breach / geofence_setpoint| DS
+    TL["telemetry_logger"] -->|telemetry_summary| DOUT
+    FC["formation_controller"] -->|setpoint_pose| DS
     BM["battery_monitor"] -->|battery| DS
     BM -->|low_battery| EL["emergency_land"]
     EL -->|cmd_vel| DS
@@ -127,19 +131,34 @@ omega  = away_from_nearer_side * turn_speed * (1 - factor)
 
 | 実行ファイル（ノード名） | Subscribe | Publish / 提供 | 役割 |
 | --- | --- | --- | --- |
-| `sim_drone` | `cmd_vel`, `setpoint_pose`, `battery` | `odom`, `pose`, `imu`, `robot_status`, TF, `get_robot_status` | 3D 簡易運動 |
+| `sim_drone` | `cmd_vel`, `setpoint_pose`, `wind_velocity`, `geofence_breach`, `geofence_setpoint`, `battery` | `odom`, `pose`, `imu`, `robot_status`, TF, `get_robot_status` | 3D 簡易運動 |
 | `waypoint_commander` | `pose` | `setpoint_pose` | 3D waypoint 列 |
 | `altitude_hold` | `odom` | `cmd_vel` | z 軸 PID |
+| `wind_disturbance` | なし | `wind_velocity` | 時間変化する風速ベクトル |
+| `geofence_monitor` | `odom` | `geofence_breach`, `geofence_setpoint` | 3D 境界監視と補正 setpoint |
+| `formation_controller` | leader `odom` | `setpoint_pose` | leader 追従 offset 制御 |
+| `telemetry_logger` | `odom`, `battery` | `telemetry_summary` | 飛行統計集計 |
 | `battery_monitor` | `cmd_vel` | `battery`, `low_battery` | 電力消費モデル |
 | `emergency_land` | `low_battery`, `odom` | `cmd_vel`, `emergency_land` service | 手動・自動降下 |
 
 ### 5.2 運動モデルと指令選択
 
-`cmd_vel` は速度目標、`setpoint_pose` は位置誤差へ `position_kp` を乗じた速度目標です。いずれも `max_linear_speed` で制限され、現在速度は `linear_accel_limit * dt` 以下の変化量で目標へ近づきます。位置と yaw は速度積分で更新し、z は 0 未満になりません。
+`cmd_vel` は速度目標、`setpoint_pose` は位置誤差へ `position_kp` を乗じた速度目標です。いずれも `max_linear_speed` で制限され、現在速度は `linear_accel_limit * dt` 以下の変化量で目標へ近づきます。位置と yaw は速度積分で更新し、z は 0 未満になりません。`wind_velocity` の各成分は積分時に機体速度へ加算される外乱速度として扱います。
 
-`setpoint_pose` は受信後 `setpoint_timeout_sec` 以内なら `cmd_vel` より優先されます。setpoint が失効すると、受信後 `cmd_timeout_sec` 以内の `cmd_vel` を使用し、両方が失効するとゼロ指令になります。同時利用するデモではどちらが指令元かを明確にしてください。厳密な姿勢・角速度・推力モデルはありません。
+`setpoint_pose` は受信後 `setpoint_timeout_sec` 以内なら `cmd_vel` より優先されます。setpoint が失効すると、受信後 `cmd_timeout_sec` 以内の `cmd_vel` を使用し、両方が失効するとゼロ指令になります。`geofence_breach=true` の間に `geofence_setpoint` を受信した場合は、その補正 setpoint を通常の setpoint として取り込みます。同時利用するデモではどちらが指令元かを明確にしてください。厳密な姿勢・角速度・推力モデルはありません。
 
-### 5.3 バッテリーと緊急着陸
+
+### 5.3 風外乱、ジオフェンス、フォーメーション、テレメトリ
+
+`wind_disturbance` は `base_wind_*` に周期 gust と turbulence を加えた `geometry_msgs/Vector3` を `wind_velocity` へ publish します。`sim_drone` はこの値を速度外乱として位置積分に加算します。
+
+`geofence_monitor` は `boundary_min_*` / `boundary_max_*` の 3D bounding box と `margin_m` を使って `odom` を監視します。境界外なら `geofence_breach=true` を publish し、境界内へ clamp した `geofence_setpoint` を publish します。境界に近い warning 状態ではログ警告のみで、breach topic は false です。
+
+`formation_controller` は `leader_odom_topic` の位置に `offset_x/y/z` を加えた follower 目標を作り、`smoothing_gain` で前回目標から平滑化して `setpoint_pose` へ publish します。launch では `/leader`、`/follower_1`、`/follower_2` の namespace を使います。
+
+`telemetry_logger` は `odom` から総移動距離、最大速度、最大高度、飛行時間、現在位置を集計し、`battery` から最新バッテリー[%]を取り込んで `telemetry_summary` (`std_msgs/String`) に JSON 風の要約文字列を publish します。
+
+### 5.4 バッテリーと緊急着陸
 
 ```text
 throttle = min(1, (|vx| + |vy| + |vz| + |wz|) / 4)
@@ -149,13 +168,17 @@ drain_Wh = power_W * dt / 3600
 
 `BatteryState.percentage` は 0--1、`RobotStatus.battery_percentage` は 0--100 です。残量が `critical_pct` 以下になると `low_battery=true`。緊急着陸ノードは高度が 0.05 m より高い間 `linear.z=-descent_speed` を発行し、地面到達後に停止します。
 
-### 5.4 主要 parameter
+### 5.5 主要 parameter
 
 | ノード | parameter default |
 | --- | --- |
 | `sim_drone` | `publish_rate_hz=50`, `cmd_timeout_sec=0.6`, `setpoint_timeout_sec=1.0`, `linear_accel_limit=3.0`, `yaw_accel_limit=4.0`, `max_linear_speed=5.0`, `max_yaw_rate=2.5`, `position_kp=1.2`, `yaw_kp=1.8` |
 | `waypoint_commander` | `publish_rate_hz=10`, `tolerance_m=0.25`, `hold_time_sec=1.0`, `loop=true` |
 | `altitude_hold` | `target_altitude_m=2.0`, PID=`1.3/0.1/0.3`, `max_vertical_speed=1.5`, `publish_rate_hz=20` |
+| `wind_disturbance` | `base_wind_x=0.5`, `base_wind_y=0`, `base_wind_z=0`, `gust_amplitude=0.3`, `gust_period_sec=8`, `turbulence_intensity=0.1`, `publish_rate_hz=10` |
+| `geofence_monitor` | bounds=`[-10,10]x[-10,10]x[0,20]`, `margin_m=1`, `publish_rate_hz=5` |
+| `formation_controller` | `leader_odom_topic=/drone_1/odom`, offset=`[2,0,0]`, `frame_id=odom`, `publish_rate_hz=10`, `smoothing_gain=0.8` |
+| `telemetry_logger` | `log_interval_sec=5`, `publish_rate_hz=1` |
 | `battery_monitor` | `capacity_wh=50`, `idle_power_w=5`, `motor_power_w=80`, `critical_pct=15`, `publish_rate_hz=1` |
 | `emergency_land` | `descent_speed=0.5`, `publish_rate_hz=20` |
 
@@ -192,6 +215,7 @@ y = l1 sin(theta1) + l2 sin(theta1 + theta2)
 
 - 地上ロボット複数台: topic/service は launch namespace、TF は `frame_prefix` で分離。
 - swarm: topic は `/drone_N/*`、child frame は `drone_N/base_link`。
+- formation: leader/follower は `/leader`、`/follower_1`、`/follower_2` namespace を使い、follower の controller は `/leader/odom` を絶対 topic として購読する。
 - マニピュレータ: 単体起動前提。複数台では frame parameter と namespace の両方を変更する。
 - TF timestamp と message timestamp は同じ ROS clock から取得する。
 

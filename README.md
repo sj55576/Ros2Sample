@@ -40,6 +40,7 @@
 | `ground_robot_sim` | 差動二輪風の地上ロボット、LiDAR 風停止判定、PID閉ループウェイポイント追従、障害物回避、緊急停止サービス、複数ロボット namespace の軽量サンプル | `ground_robot_node`, `diff_drive_patrol`, `lidar_obstacle_stop`, `lidar_obstacle_avoid`, `waypoint_follower` |
 | `drone_sim` | クアッドローター風の位置・PID高度制御、waypoint 指令、風外乱、ジオフェンス、フォーメーション飛行、テレメトリ、バッテリーモニター、緊急着陸、小規模 swarm namespace の軽量サンプル | `sim_drone`, `altitude_hold`, `waypoint_commander`, `wind_disturbance`, `geofence_monitor`, `formation_controller`, `telemetry_logger`, `battery_monitor`, `emergency_land` |
 | `manipulator_sim` | 2自由度平面マニピュレータの JointState / TF / 目標姿勢追従を学ぶ軽量サンプル | `manipulator_simulator`, `target_commander` |
+| `sensor_fusion_sim` | ノイズ付きセンサー、相補フィルタによるセンサーフュージョン、ライフサイクルノードを学ぶ軽量サンプル。QoS プロファイル、コールバックグループ、動的パラメータ更新の実例を含む | `noisy_sensor_node`, `complementary_filter`, `lifecycle_data_recorder` |
 | `sample_interfaces` | カスタム msg / srv / action 定義（ROS 2 インターフェース定義の学習用） | _(ライブラリパッケージ：実行ファイルなし)_ |
 
 検出結果は `colcon list` で確認できます。
@@ -184,6 +185,15 @@ ros2 run manipulator_sim manipulator_simulator
 # 平面ターゲット列から関節指令を publish するサンプル
 ros2 run manipulator_sim target_commander
 
+# ノイズ付きセンサー（GPS / IMU / wheel odom）を publish するサンプル
+ros2 run sensor_fusion_sim noisy_sensor_node
+
+# 相補フィルタによるセンサーフュージョン
+ros2 run sensor_fusion_sim complementary_filter
+
+# ライフサイクル管理のデータレコーダー
+ros2 run sensor_fusion_sim lifecycle_data_recorder
+
 # 地上ロボットの緊急停止サービス呼び出し例
 ros2 service call /emergency_stop std_srvs/srv/Trigger
 ros2 service call /reset_emergency std_srvs/srv/Trigger
@@ -215,6 +225,9 @@ ros2 launch drone_sim swarm.launch.py drone_count:=5
 
 # マニピュレータ: 平面到達デモ（JointState / TF / tool pose）
 ros2 launch manipulator_sim planar_reach_demo.launch.py
+
+# センサーフュージョン: ノイズ付きセンサー + 相補フィルタ + ライフサイクルレコーダー
+ros2 launch sensor_fusion_sim sensor_fusion_demo.launch.py
 ```
 
 RViz を使う場合は、ビルド後に `install/<package>/share/<package>/rviz/` 以下の設定ファイルを開いてください。
@@ -307,4 +320,4 @@ source /opt/ros/rolling/setup.bash
 
 Ros2Sample is a ROS 2 workspace for robot and drone examples. Documentation and tooling are Japanese-first, with Ubuntu 20.04 / 24.04 / 26.04 and ROS 2 Foxy / Lyrical / Jazzy / Kilted / Rolling in mind. The default and CI-primary distribution is Lyrical Luth (May 2026 LTS). Use `scripts/build.sh`, `scripts/lint.sh`, and `scripts/rosdep-install.sh` for common development tasks.
 
-Packages include `ground_robot_sim` (diff-drive robot with synthetic LiDAR, PID waypoint following, emergency stop service), `drone_sim` (quadrotor with PID altitude hold, wind disturbance, geofence monitoring, formation control, telemetry logging, battery monitoring, emergency landing), `manipulator_sim` (2-DOF planar manipulator), and `sample_interfaces` (custom msg/srv/action definitions for learning ROS 2 interface design).
+Packages include `ground_robot_sim` (diff-drive robot with synthetic LiDAR, PID waypoint following, emergency stop service), `drone_sim` (quadrotor with PID altitude hold, wind disturbance, geofence monitoring, formation control, telemetry logging, battery monitoring, emergency landing), `manipulator_sim` (2-DOF planar manipulator), `sensor_fusion_sim` (noisy sensors, complementary filter fusion, lifecycle node with QoS profiles and callback groups), and `sample_interfaces` (custom msg/srv/action definitions for learning ROS 2 interface design).

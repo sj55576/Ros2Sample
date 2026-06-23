@@ -13,6 +13,7 @@
 | `ground_robot_sim` | 差動二輪風の地上ロボット、LiDAR 風スキャン、ウェイポイント追従、障害物停止・回避、複数ロボット namespace | 2D 平面移動ロボット |
 | `drone_sim` | クアッドローター風の運動、3D waypoint、PID 高度維持、風外乱、ジオフェンス、フォーメーション制御、テレメトリ、バッテリー消費、緊急着陸、swarm namespace | 3D 空間内の簡易ドローン |
 | `manipulator_sim` | 2 自由度平面マニピュレータ、関節追従、順運動学、逆運動学、TF | 2 リンク平面アーム |
+| `sensor_fusion_sim` | ノイズ付きセンサー、相補フィルタ、ライフサイクルノード、QoS、コールバックグループ | センサーフュージョン |
 | `sample_interfaces` | サンプル共通の msg / srv / action 定義 | 状態取得と waypoint action |
 
 ### 1.2 設計方針
@@ -49,7 +50,20 @@
 - `formation_demo.launch.py`: `/leader` の odom をもとに `/follower_1` と `/follower_2` が相対 offset を保つ setpoint を生成します。
 - `swarm.launch.py`: `/drone_1` 以降の namespace で複数ドローンを格子状に配置し、それぞれ別の waypoint を巡回します。
 
-### 2.3 マニピュレータ
+### 2.3 センサーフュージョン
+
+センサーフュージョンは、ノイズを含むセンサーデータから推定状態を復元する過程を学ぶためのデモです。`noisy_sensor_node` が円軌道の真値に GPS・IMU・wheel odom のノイズを加えて publish し、`complementary_filter` がそれらを相補フィルタで融合して `fused_odom` を出力します。`lifecycle_data_recorder` はライフサイクル管理されたノードで、activate 状態の間だけ `fused_odom` をバッファに記録します。
+
+- `sensor_fusion_demo.launch.py`: 3 ノードを同時起動し、レコーダーを自動で configure → activate へ遷移させます。
+
+このデモでは次の ROS 2 機能を実践できます。
+
+- **QoS プロファイル**: GPS / wheel odom は RELIABLE、IMU は BEST_EFFORT の QoS を使い分けます。
+- **コールバックグループ**: センサー入力に `ReentrantCallbackGroup`、publish に `MutuallyExclusiveCallbackGroup` を使い、`MultiThreadedExecutor` で並行処理します。
+- **動的パラメータ更新**: `gps_alpha`、`odom_alpha`、`imu_yaw_weight` を実行中に `ros2 param set` で変更できます。
+- **ライフサイクルノード**: レコーダーが `unconfigured → inactive → active` の状態遷移を持ち、launch から自動駆動されます。
+
+### 2.4 マニピュレータ
 
 マニピュレータは 2 リンクの平面アームです。`joint_target` を受け取り、関節速度上限に従って現在関節角を目標角へ近づけます。各 tick で `joint_states`、手先 `tool_pose`、`base_link -> link1 -> tool0` TF を発行します。
 
@@ -216,9 +230,80 @@
 | 到着判定 | 2 関節とも目標角との差が `tolerance_rad` 以下 |
 | 待機 | 到着後 `hold_time_sec` 待機して次目標へ進む |
 
-## 7. 実行・観測手順
+## 7. センサーフュージョン仕様
 
-### 7.1 ビルド
+### 7.1 `noisy_sensor_node`
+
+| 項目 | 仕様 |
+| --- | --- |
+| ノード名 | `noisy_sensor_node` |
+| 出力 topic | `gps` (`PointStamped`, RELIABLE, 1 Hz)、`imu` (`Imu`, BEST_EFFORT, 50 Hz)、`wheel_odom` (`Odometry`, RELIABLE, 10 Hz)、`ground_truth` (`Odometry`, RELIABLE, 10 Hz) |
+| TF | `world -> base_link_truth` |
+| 運動モデル | 円軌道 `x = R cos(ωt)`、`y = R sin(ωt)` にノイズを付加 |
+
+主なパラメータは次の通りです。
+
+| パラメータ | 既定値 | 説明 |
+| --- | --- | --- |
+| `circle_radius` | `5.0` | 円軌道半径 [m] |
+| `circle_omega` | `0.3` | 円軌道角速度 [rad/s] |
+| `gps_rate_hz` | `1.0` | GPS 発行周期 [Hz] |
+| `gps_noise_stddev` | `0.5` | GPS ノイズ標準偏差 [m] |
+| `imu_rate_hz` | `50.0` | IMU 発行周期 [Hz] |
+| `imu_accel_stddev` | `0.1` | IMU 加速度ノイズ標準偏差 [m/s²] |
+| `imu_gyro_stddev` | `0.02` | IMU ジャイロノイズ標準偏差 [rad/s] |
+| `odom_rate_hz` | `10.0` | wheel odom 発行周期 [Hz] |
+| `odom_noise_stddev` | `0.05` | wheel odom ノイズ標準偏差 [m] |
+
+### 7.2 `complementary_filter`
+
+| 項目 | 仕様 |
+| --- | --- |
+| ノード名 | `complementary_filter` |
+| 入力 topic | `gps` (RELIABLE)、`imu` (BEST_EFFORT)、`wheel_odom` (RELIABLE) |
+| 出力 topic | `fused_odom` (`Odometry`, RELIABLE)、`filter_diagnostics` (`String`) |
+| フュージョン | GPS と wheel odom の位置を `alpha` で相補フィルタ、IMU yaw を `imu_yaw_weight` でブレンド |
+| コールバックグループ | センサー: `ReentrantCallbackGroup`、publish timer: `MutuallyExclusiveCallbackGroup` |
+| Executor | `MultiThreadedExecutor` (4 スレッド) |
+| 動的パラメータ | `gps_alpha`、`odom_alpha`、`imu_yaw_weight` を実行中に変更可能（0--1 のバリデーション付き） |
+
+主なパラメータは次の通りです。
+
+| パラメータ | 既定値 | 説明 |
+| --- | --- | --- |
+| `gps_alpha` | `0.15` | GPS 位置の相補フィルタ重み |
+| `odom_alpha` | `0.30` | wheel odom 位置の相補フィルタ重み |
+| `imu_yaw_weight` | `0.05` | IMU yaw ブレンド重み |
+| `publish_rate_hz` | `20.0` | フュージョン結果の発行周期 [Hz] |
+
+### 7.3 `lifecycle_data_recorder`
+
+| 項目 | 仕様 |
+| --- | --- |
+| ノード名 | `lifecycle_data_recorder` |
+| ノード種別 | `LifecycleNode` |
+| 入力 topic | `fused_odom` (`Odometry`、activate 時にサブスクライブ) |
+| 出力 topic | `recording_status` (`String`)、`recording_summary` (`String`、JSON) |
+| 状態遷移 | `on_configure` → `on_activate` → `on_deactivate` → `on_cleanup` / `on_shutdown` |
+| バッファ | 最大 `max_buffer_size` 件を保持（古いレコードは先頭から削除） |
+
+主なパラメータは次の通りです。
+
+| パラメータ | 既定値 | 説明 |
+| --- | --- | --- |
+| `max_buffer_size` | `500` | データバッファ最大サイズ |
+| `publish_rate_hz` | `1.0` | ステータス発行周期 [Hz] |
+| `input_topic` | `fused_odom` | 入力 topic 名 |
+
+### 7.4 センサーフュージョン launch シナリオ
+
+| launch | 主な起動ノード | シナリオ |
+| --- | --- | --- |
+| `sensor_fusion_demo.launch.py` | `noisy_sensor_node`、`complementary_filter`、`lifecycle_data_recorder` | ノイズ付きセンサーから相補フィルタでフュージョンし、ライフサイクルレコーダーで記録。レコーダーは自動 configure → activate される |
+
+## 8. 実行・観測手順
+
+### 8.1 ビルド
 
 ```bash
 source /opt/ros/<rosdistro>/setup.bash
@@ -226,7 +311,7 @@ colcon build --symlink-install
 source install/setup.bash
 ```
 
-### 7.2 代表デモの起動
+### 8.2 代表デモの起動
 
 ```bash
 # 地上ロボット
@@ -244,9 +329,12 @@ ros2 launch drone_sim swarm.launch.py drone_count:=5
 
 # マニピュレータ
 ros2 launch manipulator_sim planar_reach_demo.launch.py
+
+# センサーフュージョン
+ros2 launch sensor_fusion_sim sensor_fusion_demo.launch.py
 ```
 
-### 7.3 topic / service の確認例
+### 8.3 topic / service の確認例
 
 ```bash
 ros2 topic list
@@ -256,6 +344,9 @@ ros2 topic echo /robot_status
 ros2 topic echo /wind_velocity
 ros2 topic echo /geofence_breach
 ros2 topic echo /telemetry_summary
+ros2 topic echo /fused_odom
+ros2 topic echo /filter_diagnostics
+ros2 topic echo /recording_status
 ros2 service call /get_robot_status sample_interfaces/srv/GetRobotStatus
 ros2 service call /emergency_stop std_srvs/srv/Trigger
 ros2 service call /reset_emergency std_srvs/srv/Trigger
@@ -269,7 +360,7 @@ ros2 topic echo /drone_1/pose
 ros2 service call /drone_1/get_robot_status sample_interfaces/srv/GetRobotStatus
 ```
 
-## 8. 仕様変更時の更新ポイント
+## 9. 仕様変更時の更新ポイント
 
 - 新しいノード、topic、service、action を追加したら、この文書の該当表を更新してください。
 - launch ファイルや config YAML の既定値を変更した場合は、シナリオ表とパラメータ表を更新してください。

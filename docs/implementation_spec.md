@@ -6,11 +6,11 @@
 
 本ワークスペースは ROS 2 の通信、launch、namespace、TF、簡易制御を学ぶための軽量サンプルです。
 
-- 対象: 2D 差動二輪、3D クアッドローター風運動、2 自由度平面アーム
+- 対象: 2D 差動二輪、3D クアッドローター風運動、2 自由度平面アーム、センサーフュージョン
 - 実装: Python (`rclpy`) と標準的な ROS 2 message
 - 時間: 各ノードの ROS clock。launch の `use_sim_time` で切り替え可能
 - 非目標: 接触、摩擦、空力、衝突応答、センサーノイズ、実機安全保証
-- QoS: publisher/subscription はすべて depth `10` の既定 QoS。センサー専用 QoS は未使用
+- QoS: 大半の publisher/subscription は depth `10` の既定 QoS。`sensor_fusion_sim` では GPS/wheel odom に RELIABLE、IMU に BEST_EFFORT の QoS を明示的に指定
 - 単位: SI 単位系（m、s、rad、m/s、rad/s）。バッテリー表示のみ `%`
 
 ## 2. システム構成
@@ -43,6 +43,14 @@ flowchart LR
     TC["target_commander"] -->|joint_target| MS["manipulator_simulator"]
     MS -->|joint_states| TC
     MS --> MOUT["joint_states / tool_pose / TF"]
+  end
+
+  subgraph Fusion["sensor_fusion_sim"]
+    NS["noisy_sensor_node"] -->|gps / imu / wheel_odom| CF["complementary_filter"]
+    CF -->|fused_odom| LR["lifecycle_data_recorder"]
+    NS --> FOUT["ground_truth / TF"]
+    CF --> FOUT2["fused_odom / filter_diagnostics"]
+    LR --> LOUT["recording_status / recording_summary"]
   end
 ```
 
@@ -211,7 +219,56 @@ y = l1 sin(theta1) + l2 sin(theta1 + theta2)
 
 `joint_target` の name 順は任意です。期待する joint 名が含まれる要素だけを更新し、不足要素は直前の目標を維持します。
 
-## 7. namespace と TF
+## 7. センサーフュージョン
+
+### 7.1 ノード契約
+
+| 実行ファイル（ノード名） | Subscribe | Publish | 役割 |
+| --- | --- | --- | --- |
+| `noisy_sensor_node` | なし | `gps: PointStamped` (RELIABLE, 1 Hz), `imu: Imu` (BEST_EFFORT, 50 Hz), `wheel_odom: Odometry` (RELIABLE, 10 Hz), `ground_truth: Odometry` (RELIABLE, 10 Hz), TF | 円軌道にノイズを加えたセンサーデータ生成 |
+| `complementary_filter` | `gps` (RELIABLE), `imu` (BEST_EFFORT), `wheel_odom` (RELIABLE) | `fused_odom: Odometry`, `filter_diagnostics: String` | GPS / IMU / odom の相補フィルタ融合 |
+| `lifecycle_data_recorder` | `fused_odom: Odometry` (activate 時) | `recording_status: String`, `recording_summary: String` (JSON) | ライフサイクル管理のデータ記録 |
+
+### 7.2 ノイズモデル
+
+`noisy_sensor_node` は円軌道 `x = R cos(ωt)`, `y = R sin(ωt)` の真値に次のノイズを加えます。
+
+- **GPS**: 各軸に `N(0, gps_noise_stddev²)` のガウスノイズ
+- **IMU**: 加速度に `N(0, imu_accel_stddev²)`、ジャイロに `N(0, imu_gyro_stddev²)` のノイズ。バイアスは `drift_walk` で ±0.05 (加速度) / ±0.01 (ジャイロ) にクランプされたランダムウォーク
+- **Wheel odom**: 各軸に `N(0, odom_noise_stddev²)` のガウスノイズ
+
+### 7.3 相補フィルタ
+
+GPS 受信時: `fused_pos = gps_alpha * gps_pos + (1 - gps_alpha) * fused_pos`
+
+Wheel odom 受信時: `fused_pos = odom_alpha * odom_pos + (1 - odom_alpha) * fused_pos`
+
+IMU 受信時: yaw を `imu_yaw_weight` でブレンド
+
+`gps_alpha`、`odom_alpha`、`imu_yaw_weight` は実行中に `ros2 param set` で動的に変更可能です。値は `[0, 1]` にバリデーションされます。スレッドセーフは `threading.Lock` で保証します。
+
+### 7.4 ライフサイクルとコールバックグループ
+
+`lifecycle_data_recorder` は `LifecycleNode` を継承します。
+
+- `on_configure`: ライフサイクル publisher を作成
+- `on_activate`: `fused_odom` のサブスクリプションを作成し記録を開始
+- `on_deactivate`: サブスクリプションを破棄し、記録サマリー（JSON）を publish
+- `on_cleanup` / `on_shutdown`: リソース解放
+
+バッファは `max_buffer_size` 件まで保持し、超過分は先頭から削除します。
+
+`complementary_filter` はセンサーコールバックに `ReentrantCallbackGroup`、publish タイマーに `MutuallyExclusiveCallbackGroup` を使い、`MultiThreadedExecutor(num_threads=4)` で実行します。
+
+### 7.5 parameter
+
+| ノード | parameter default |
+| --- | --- |
+| `noisy_sensor_node` | `circle_radius=5.0`, `circle_omega=0.3`, `gps_rate_hz=1`, `gps_noise_stddev=0.5`, `imu_rate_hz=50`, `imu_accel_stddev=0.1`, `imu_gyro_stddev=0.02`, `odom_rate_hz=10`, `odom_noise_stddev=0.05` |
+| `complementary_filter` | `gps_alpha=0.15`, `odom_alpha=0.30`, `imu_yaw_weight=0.05`, `publish_rate_hz=20` |
+| `lifecycle_data_recorder` | `max_buffer_size=500`, `publish_rate_hz=1.0`, `input_topic=fused_odom` |
+
+## 8. namespace と TF
 
 - 地上ロボット複数台: topic/service は launch namespace、TF は `frame_prefix` で分離。
 - swarm: topic は `/drone_N/*`、child frame は `drone_N/base_link`。
@@ -219,7 +276,7 @@ y = l1 sin(theta1) + l2 sin(theta1 + theta2)
 - マニピュレータ: 単体起動前提。複数台では frame parameter と namespace の両方を変更する。
 - TF timestamp と message timestamp は同じ ROS clock から取得する。
 
-## 8. 失敗モードと制約
+## 9. 失敗モードと制約
 
 | 条件 | 現在の挙動 | 利用側の対策 |
 | --- | --- | --- |
@@ -230,9 +287,9 @@ y = l1 sin(theta1) + l2 sin(theta1 + theta2)
 | 実時間遅延 | timer jitter と callback 遅延が積分誤差になる | 本サンプルを実機制御に転用しない |
 | `use_sim_time=true` で `/clock` なし | timer が進行しない | clock publisher を起動するか false を使う |
 
-## 9. 受け入れ確認
+## 10. 受け入れ確認
 
-### 9.1 静的・単体確認
+### 10.1 静的・単体確認
 
 ```bash
 ./scripts/lint.sh
@@ -241,7 +298,7 @@ colcon test --event-handlers console_direct+
 colcon test-result --verbose
 ```
 
-### 9.2 地上ロボット smoke test
+### 10.2 地上ロボット smoke test
 
 ```bash
 ros2 launch ground_robot_sim waypoint_follower.launch.py
@@ -253,7 +310,7 @@ ros2 service call /reset_emergency std_srvs/srv/Trigger
 
 期待結果: `odom` が約30 Hz、status が `moving` または `idle`、非常停止中は位置が変化しない。
 
-### 9.3 ドローン smoke test
+### 10.3 ドローン smoke test
 
 ```bash
 ros2 launch drone_sim single_quad_waypoint.launch.py
@@ -264,7 +321,7 @@ ros2 service call /get_robot_status sample_interfaces/srv/GetRobotStatus
 
 期待結果: waypoint に向けて3D位置が変化し、status service が成功する。
 
-### 9.4 マニピュレータ smoke test
+### 10.4 マニピュレータ smoke test
 
 ```bash
 ros2 launch manipulator_sim planar_reach_demo.launch.py
@@ -275,7 +332,19 @@ ros2 run tf2_ros tf2_echo base_link tool0
 
 期待結果: 2関節の状態、手先 pose、連続した TF が取得できる。
 
-## 10. 変更時チェックリスト
+### 10.5 センサーフュージョン smoke test
+
+```bash
+ros2 launch sensor_fusion_sim sensor_fusion_demo.launch.py
+ros2 topic echo /fused_odom --once
+ros2 topic echo /ground_truth --once
+ros2 topic echo /recording_status --once
+ros2 topic echo /filter_diagnostics --once
+```
+
+期待結果: `fused_odom` が約 20 Hz で発行され、`ground_truth` との比較でフィルタの効果を確認できる。`recording_status` が `active` で記録中であること。
+
+## 11. 変更時チェックリスト
 
 1. `declare_parameter` と `config/*.yaml` の default/上書きを更新する。
 2. topic、service、action、TF の型と方向を本書へ反映する。

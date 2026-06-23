@@ -1,0 +1,28 @@
+noisy_sensor_node:
+  ros__parameters:
+    circle_radius: 5.0
+    circle_omega: 0.3
+    gps_rate_hz: 1.0
+    gps_noise_stddev: 0.5
+    imu_rate_hz: 50.0
+    imu_accel_stddev: 0.1
+    imu_gyro_stddev: 0.02
+    odom_rate_hz: 10.0
+    odom_noise_stddev: 0.05
+    frame_id: "world"
+    base_frame_id: "base_link"
+
+complementary_filter:
+  ros__parameters:
+    gps_alpha: 0.15
+    odom_alpha: 0.30
+    publish_rate_hz: 20.0
+    frame_id: "world"
+    child_frame_id: "base_link_fused"
+    imu_yaw_weight: 0.05
+
+lifecycle_data_recorder:
+  ros__parameters:
+    max_buffer_size: 500
+    publish_rate_hz: 1.0
+    input_topic: "fused_odom"

@@ -35,6 +35,7 @@ colcon test-result --verbose
 | `ground_robot_sim` | 地上ロボット向けの軽量 ROS 2 Python サンプルです。 |
 | `drone_sim` | ドローン向けの軽量 ROS 2 Python サンプルです。waypoint、高度維持、風外乱、ジオフェンス、フォーメーション、テレメトリ、バッテリー、緊急着陸を含みます。 |
 | `manipulator_sim` | 2自由度平面マニピュレータ向けの軽量 ROS 2 Python サンプルです。 |
+| `sensor_fusion_sim` | ノイズ付きセンサー、相補フィルタ、ライフサイクルノードの軽量 ROS 2 Python サンプルです。QoS プロファイル、コールバックグループ、動的パラメータ更新を含みます。 |
 | `sample_interfaces` | 共通 msg / srv / action 定義を収録する ament_cmake パッケージです。 |
 
 ## パッケージ追加時のチェックリスト

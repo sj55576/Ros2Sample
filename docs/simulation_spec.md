@@ -11,7 +11,7 @@
 | パッケージ | 役割 | 主なシミュレーション対象 |
 | --- | --- | --- |
 | `ground_robot_sim` | 差動二輪風の地上ロボット、LiDAR 風スキャン、ウェイポイント追従、障害物停止・回避、複数ロボット namespace | 2D 平面移動ロボット |
-| `drone_sim` | クアッドローター風の運動、3D waypoint、PID 高度維持、バッテリー消費、緊急着陸、swarm namespace | 3D 空間内の簡易ドローン |
+| `drone_sim` | クアッドローター風の運動、3D waypoint、PID 高度維持、風外乱、ジオフェンス、フォーメーション制御、テレメトリ、バッテリー消費、緊急着陸、swarm namespace | 3D 空間内の簡易ドローン |
 | `manipulator_sim` | 2 自由度平面マニピュレータ、関節追従、順運動学、逆運動学、TF | 2 リンク平面アーム |
 | `sample_interfaces` | サンプル共通の msg / srv / action 定義 | 状態取得と waypoint action |
 
@@ -45,6 +45,8 @@
 - `single_quad_waypoint.launch.py`: `waypoint_commander` が `setpoint_pose` を発行し、`sim_drone` が目標位置へ追従します。
 - `altitude_hold.launch.py`: `altitude_hold` が `odom` の高度を見て `cmd_vel.linear.z` を PID 制御し、指定高度を維持します。
 - `battery_demo.launch.py`: waypoint 飛行中に `battery_monitor` が消費電力を見積もり、低バッテリー時に `emergency_land` が降下指令を出します。
+- `wind_demo.launch.py`: `wind_disturbance` が時間変化する風速を発行し、`geofence_monitor` が境界逸脱を検出し、`telemetry_logger` が飛行統計を要約します。
+- `formation_demo.launch.py`: `/leader` の odom をもとに `/follower_1` と `/follower_2` が相対 offset を保つ setpoint を生成します。
 - `swarm.launch.py`: `/drone_1` 以降の namespace で複数ドローンを格子状に配置し、それぞれ別の waypoint を巡回します。
 
 ### 2.3 マニピュレータ
@@ -161,6 +163,10 @@
 | --- | --- | --- | --- |
 | `waypoint_commander` | `odom` | `setpoint_pose` | 3D waypoint `[x, y, z, ...]` を順に発行。到着後 `hold_time_sec` 待機 |
 | `altitude_hold` | `odom` | `cmd_vel` | 高度誤差を PID に通して `linear.z` を発行 |
+| `wind_disturbance` | なし | `wind_velocity` | base wind、sin gust、簡易 turbulence を合成した風速ベクトルを発行 |
+| `geofence_monitor` | `odom` | `geofence_breach`、`geofence_setpoint` | 3D bounding box を監視し、逸脱時に境界内へ戻す setpoint を発行 |
+| `formation_controller` | leader `odom` | `setpoint_pose` | leader 位置に offset を足し、平滑化した follower 目標を発行 |
+| `telemetry_logger` | `odom`、`battery` | `telemetry_summary` | 総飛行距離、最大高度、最大速度、バッテリー、飛行時間、現在位置を集計 |
 | `battery_monitor` | `cmd_vel` | `battery`、`low_battery` | idle + throttle 比例の消費電力で Wh を減算 |
 | `emergency_land` | `low_battery`、`odom` | `cmd_vel`、`emergency_land` service | 低バッテリーまたは service 呼び出しで降下速度を発行 |
 
@@ -171,6 +177,8 @@
 | `single_quad_waypoint.launch.py` | `sim_drone`、`waypoint_commander` | 1 台の 3D waypoint 飛行 |
 | `altitude_hold.launch.py` | `sim_drone`、`altitude_hold` | PID 高度維持 |
 | `battery_demo.launch.py` | `sim_drone`、`waypoint_commander`、`battery_monitor`、`emergency_land` | 飛行、電池消費、低電池時の自動着陸 |
+| `wind_demo.launch.py` | `sim_drone`、`waypoint_commander`、`wind_disturbance`、`geofence_monitor`、`telemetry_logger` | 風外乱、境界監視、飛行統計の統合デモ |
+| `formation_demo.launch.py` | `/leader` の `sim_drone` + `waypoint_commander`、follower ごとの `sim_drone` + `formation_controller` | leader-follower の相対位置維持 |
 | `swarm.launch.py` | namespace ごとの `sim_drone`、`waypoint_commander` | 小規模 swarm。`drone_count`、`spacing_m`、`altitude_m` で台数・配置を変更 |
 
 ## 6. マニピュレータ仕様
@@ -230,6 +238,8 @@ ros2 launch ground_robot_sim multi_robot.launch.py
 ros2 launch drone_sim single_quad_waypoint.launch.py
 ros2 launch drone_sim altitude_hold.launch.py target_altitude_m:=2.0
 ros2 launch drone_sim battery_demo.launch.py
+ros2 launch drone_sim wind_demo.launch.py
+ros2 launch drone_sim formation_demo.launch.py
 ros2 launch drone_sim swarm.launch.py drone_count:=5
 
 # マニピュレータ
@@ -243,6 +253,9 @@ ros2 topic list
 ros2 topic echo /odom
 ros2 topic echo /scan
 ros2 topic echo /robot_status
+ros2 topic echo /wind_velocity
+ros2 topic echo /geofence_breach
+ros2 topic echo /telemetry_summary
 ros2 service call /get_robot_status sample_interfaces/srv/GetRobotStatus
 ros2 service call /emergency_stop std_srvs/srv/Trigger
 ros2 service call /reset_emergency std_srvs/srv/Trigger

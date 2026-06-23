@@ -33,8 +33,9 @@ colcon test-result --verbose
 | パッケージ | 役割 |
 | --- | --- |
 | `ground_robot_sim` | 地上ロボット向けの軽量 ROS 2 Python サンプルです。 |
-| `drone_sim` | ドローン向けの軽量 ROS 2 Python サンプルです。 |
+| `drone_sim` | ドローン向けの軽量 ROS 2 Python サンプルです。waypoint、高度維持、風外乱、ジオフェンス、フォーメーション、テレメトリ、バッテリー、緊急着陸を含みます。 |
 | `manipulator_sim` | 2自由度平面マニピュレータ向けの軽量 ROS 2 Python サンプルです。 |
+| `sample_interfaces` | 共通 msg / srv / action 定義を収録する ament_cmake パッケージです。 |
 
 ## パッケージ追加時のチェックリスト
 
@@ -44,3 +45,4 @@ colcon test-result --verbose
 4. `./scripts/build.sh` を実行する。
 5. テストがある場合は `colcon test` と `colcon test-result --verbose` を実行する。
 6. README のパッケージ一覧と実行例を更新する。
+7. topic / service / action / launch / parameter を変更した場合は、`docs/simulation_spec.md` と `docs/implementation_spec.md`、該当パッケージ README を更新する。

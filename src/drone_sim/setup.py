@@ -28,8 +28,12 @@ setup(
             'altitude_hold = drone_sim.altitude_hold:main',
             'battery_monitor = drone_sim.battery_monitor:main',
             'emergency_land = drone_sim.emergency_land:main',
+            'formation_controller = drone_sim.formation_controller:main',
+            'geofence_monitor = drone_sim.geofence_monitor:main',
             'sim_drone = drone_sim.sim_drone:main',
+            'telemetry_logger = drone_sim.telemetry_logger:main',
             'waypoint_commander = drone_sim.waypoint_commander:main',
+            'wind_disturbance = drone_sim.wind_disturbance:main',
         ],
     },
 )

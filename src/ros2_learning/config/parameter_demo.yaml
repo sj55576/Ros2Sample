@@ -1,0 +1,6 @@
+parameter_demo:
+  ros__parameters:
+    robot_name: "tutorial_bot"
+    max_speed: 1.5
+    update_rate_hz: 2.0
+    enable_logging: true

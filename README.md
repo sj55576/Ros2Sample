@@ -41,6 +41,7 @@
 | `drone_sim` | クアッドローター風の位置・PID高度制御、waypoint 指令、風外乱、ジオフェンス、フォーメーション飛行、テレメトリ、バッテリーモニター、緊急着陸、小規模 swarm namespace の軽量サンプル | `sim_drone`, `altitude_hold`, `waypoint_commander`, `wind_disturbance`, `geofence_monitor`, `formation_controller`, `telemetry_logger`, `battery_monitor`, `emergency_land` |
 | `manipulator_sim` | 2自由度平面マニピュレータの JointState / TF / 目標姿勢追従を学ぶ軽量サンプル | `manipulator_simulator`, `target_commander` |
 | `sensor_fusion_sim` | ノイズ付きセンサー、相補フィルタによるセンサーフュージョン、ライフサイクルノードを学ぶ軽量サンプル。QoS プロファイル、コールバックグループ、動的パラメータ更新の実例を含む | `noisy_sensor_node`, `complementary_filter`, `lifecycle_data_recorder` |
+| `ros2_learning` | ROS 2 の基礎概念を段階的に学ぶチュートリアルパッケージ。Publisher/Subscriber、Service、Action、パラメータ、TF、ライフサイクルノードの最小構成サンプル | `minimal_publisher`, `minimal_subscriber`, `minimal_service_server`, `minimal_service_client`, `minimal_action_server`, `minimal_action_client`, `parameter_demo`, `tf_broadcaster_demo`, `tf_listener_demo`, `lifecycle_demo` |
 | `sample_interfaces` | カスタム msg / srv / action 定義（ROS 2 インターフェース定義の学習用） | _(ライブラリパッケージ：実行ファイルなし)_ |
 
 検出結果は `colcon list` で確認できます。
@@ -228,9 +229,47 @@ ros2 launch manipulator_sim planar_reach_demo.launch.py
 
 # センサーフュージョン: ノイズ付きセンサー + 相補フィルタ + ライフサイクルレコーダー
 ros2 launch sensor_fusion_sim sensor_fusion_demo.launch.py
+
+# チュートリアル: Publisher/Subscriber デモ
+ros2 launch ros2_learning pubsub_demo.launch.py
+
+# チュートリアル: サービスサーバー/クライアント デモ
+ros2 launch ros2_learning service_demo.launch.py
+
+# チュートリアル: アクションサーバー/クライアント デモ
+ros2 launch ros2_learning action_demo.launch.py
+
+# チュートリアル: パラメータ デモ
+ros2 launch ros2_learning parameter_demo.launch.py
+
+# チュートリアル: TF ブロードキャスター/リスナー デモ
+ros2 launch ros2_learning tf_demo.launch.py
+
+# チュートリアル: ライフサイクルノード デモ
+ros2 launch ros2_learning lifecycle_demo.launch.py
 ```
 
 RViz を使う場合は、ビルド後に `install/<package>/share/<package>/rviz/` 以下の設定ファイルを開いてください。
+
+## チュートリアル（学習パス）
+
+ROS 2 初学者向けの段階的なチュートリアルを `docs/tutorials/` に収録しています。`ros2_learning` パッケージの最小構成サンプルを使いながら、基礎概念を学んだ後に既存パッケージの実装を読み解けるよう構成しています。
+
+| チュートリアル | 目安時間 | 内容 |
+| --- | --- | --- |
+| [`00_learning_path.md`](docs/tutorials/00_learning_path.md) | 5分 | 学習パスの概要と環境構築 |
+| [`01_publisher_subscriber.md`](docs/tutorials/01_publisher_subscriber.md) | 30分 | トピック通信の基礎 |
+| [`02_service_action.md`](docs/tutorials/02_service_action.md) | 45分 | サービスとアクション |
+| [`03_launch_params.md`](docs/tutorials/03_launch_params.md) | 30分 | Launch ファイルとパラメータ |
+| [`04_tf_transforms.md`](docs/tutorials/04_tf_transforms.md) | 45分 | TF2 と座標変換 |
+| [`05_custom_interfaces.md`](docs/tutorials/05_custom_interfaces.md) | 30分 | カスタムメッセージ定義 |
+| [`06_lifecycle_qos.md`](docs/tutorials/06_lifecycle_qos.md) | 45分 | ライフサイクルノードと QoS |
+
+```bash
+# チュートリアル用パッケージのビルド
+colcon build --packages-select ros2_learning sample_interfaces
+source install/setup.bash
+```
 
 ## 詳細仕様ドキュメント
 
@@ -320,4 +359,4 @@ source /opt/ros/rolling/setup.bash
 
 Ros2Sample is a ROS 2 workspace for robot and drone examples. Documentation and tooling are Japanese-first, with Ubuntu 20.04 / 24.04 / 26.04 and ROS 2 Foxy / Lyrical / Jazzy / Kilted / Rolling in mind. The default and CI-primary distribution is Lyrical Luth (May 2026 LTS). Use `scripts/build.sh`, `scripts/lint.sh`, and `scripts/rosdep-install.sh` for common development tasks.
 
-Packages include `ground_robot_sim` (diff-drive robot with synthetic LiDAR, PID waypoint following, emergency stop service), `drone_sim` (quadrotor with PID altitude hold, wind disturbance, geofence monitoring, formation control, telemetry logging, battery monitoring, emergency landing), `manipulator_sim` (2-DOF planar manipulator), `sensor_fusion_sim` (noisy sensors, complementary filter fusion, lifecycle node with QoS profiles and callback groups), and `sample_interfaces` (custom msg/srv/action definitions for learning ROS 2 interface design).
+Packages include `ground_robot_sim` (diff-drive robot with synthetic LiDAR, PID waypoint following, emergency stop service), `drone_sim` (quadrotor with PID altitude hold, wind disturbance, geofence monitoring, formation control, telemetry logging, battery monitoring, emergency landing), `manipulator_sim` (2-DOF planar manipulator), `sensor_fusion_sim` (noisy sensors, complementary filter fusion, lifecycle node with QoS profiles and callback groups), `sample_interfaces` (custom msg/srv/action definitions for learning ROS 2 interface design), and `ros2_learning` (step-by-step tutorial package covering Publisher/Subscriber, Service, Action, Parameters, TF, and Lifecycle nodes with progressive tutorials in `docs/tutorials/`).

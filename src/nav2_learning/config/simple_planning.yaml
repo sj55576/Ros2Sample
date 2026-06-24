@@ -1,0 +1,17 @@
+simple_path_planner:
+  ros__parameters:
+    start_x: 0.0
+    start_y: 0.0
+    goal_x: 2.0
+    goal_y: 2.0
+    cost_threshold: 50
+    allow_diagonal: true
+    replan_rate: 0.0
+
+simple_path_follower:
+  ros__parameters:
+    lookahead_distance: 0.3
+    max_linear_speed: 0.3
+    max_angular_speed: 1.0
+    goal_tolerance: 0.15
+    control_rate: 20.0

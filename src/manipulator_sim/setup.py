@@ -26,6 +26,7 @@ setup(
         'console_scripts': [
             'manipulator_simulator = manipulator_sim.manipulator_simulator:main',
             'target_commander = manipulator_sim.target_commander:main',
+            'ik_target_commander = manipulator_sim.ik_target_commander:main',
         ],
     },
 )

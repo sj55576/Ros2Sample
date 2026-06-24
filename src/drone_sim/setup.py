@@ -27,6 +27,8 @@ setup(
         'console_scripts': [
             'altitude_hold = drone_sim.altitude_hold:main',
             'battery_monitor = drone_sim.battery_monitor:main',
+            'collision_avoidance = drone_sim.collision_avoidance:main',
+            'diagnostics_publisher = drone_sim.diagnostics_publisher:main',
             'emergency_land = drone_sim.emergency_land:main',
             'formation_controller = drone_sim.formation_controller:main',
             'geofence_monitor = drone_sim.geofence_monitor:main',

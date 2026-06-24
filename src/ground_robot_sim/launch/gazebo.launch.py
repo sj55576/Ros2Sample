@@ -44,7 +44,7 @@ def generate_launch_description():
                     ' if "false" == "', use_gui, '"'
                     ' else "-r ' + world + '"'
                 ]),
-                'gz_version': '10',
+                'gz_version': '8',
             }.items(),
         ),
 

@@ -1,0 +1,7 @@
+nav2_waypoint_client:
+  ros__parameters:
+    goal_x: 2.0
+    goal_y: 2.0
+    goal_yaw: 0.0
+    use_waypoints: false
+    waypoints: [1.0, 0.0, 2.0, 1.0, 2.0, 2.0]

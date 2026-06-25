@@ -304,7 +304,7 @@ ros2 run ros2_learning tf_broadcaster_demo
 
 ```bash
 # ターミナル 1: manipulator_sim を起動
-ros2 launch manipulator_sim manipulator.launch.py
+ros2 launch manipulator_sim planar_reach_demo.launch.py
 
 # ターミナル 2: TF ツリーを PDF として生成
 ros2 run tf2_tools view_frames

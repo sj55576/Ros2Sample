@@ -6,7 +6,6 @@ from rclpy.lifecycle import (
     LifecycleState,
     TransitionCallbackReturn,
 )
-from rclpy.lifecycle.node import LifecyclePublisher
 from rclpy.qos import (
     HistoryPolicy,
     QoSProfile,

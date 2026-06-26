@@ -12,6 +12,31 @@
 
 ---
 
+## 図で見るライフサイクルと QoS
+
+```mermaid
+stateDiagram-v2
+    [*] --> Unconfigured
+    Unconfigured --> Inactive: configure
+    Inactive --> Active: activate
+    Active --> Inactive: deactivate
+    Inactive --> Unconfigured: cleanup
+    Active --> Finalized: shutdown
+    Inactive --> Finalized: shutdown
+    Unconfigured --> Finalized: shutdown
+```
+
+```mermaid
+flowchart LR
+    publisher["Publisher"] -- "Reliability / History / Durability" --> qos["QoS profile"]
+    qos --> subscriber["Subscriber"]
+    qos --> reliable["RELIABLE<br/>欠落を避けたい"]
+    qos --> besteffort["BEST_EFFORT<br/>最新値を優先"]
+    qos --> transient["TRANSIENT_LOCAL<br/>後参加にも最後の値"]
+```
+
+ライフサイクルは「いつ動き始めるか」を制御し、QoS は「通信をどの品質で届けるか」を制御します。どちらも実運用で重要ですが、責務は別です。
+
 ## Part A: ライフサイクルノード
 
 ### なぜライフサイクル管理が必要か

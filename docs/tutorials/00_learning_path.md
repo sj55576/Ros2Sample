@@ -56,6 +56,26 @@ source install/setup.bash
 | 10 | [コントローラーと経路追従](10_nav2_controller.md) | 45 分 | Pure Pursuit による移動制御 |
 | 11 | [ビヘイビアツリー入門](11_behavior_tree.md) | 45 分 | タスク管理とリカバリ |
 
+### 学習全体の見取り図
+
+```mermaid
+flowchart LR
+    start["ROS 2 の通信を知る"] --> topic["1. Topic<br/>Publisher / Subscriber"]
+    topic --> request["2. Request 型通信<br/>Service / Action"]
+    request --> config["3. 起動と設定<br/>Launch / Parameter"]
+    config --> tf["4. ロボットの座標<br/>TF2"]
+    tf --> iface["5. 型を設計する<br/>msg / srv / action"]
+    iface --> ops["6. 運用の基礎<br/>Lifecycle / QoS"]
+    ops --> nav2["7. Nav2 全体像"]
+    nav2 --> map["8. Map / Costmap"]
+    map --> planner["9. Planner"]
+    planner --> controller["10. Controller"]
+    controller --> bt["11. Behavior Tree"]
+    bt --> apps["既存パッケージを読む<br/>ground_robot_sim / drone_sim"]
+```
+
+前半の 1〜6 は ROS 2 の共通部品を学ぶ段階です。後半の 7〜11 は、その部品を自律移動システムに組み合わせる段階です。途中で詰まった場合は、図の左側に戻って前提概念を確認してください。
+
 ---
 
 ### ステップ 1: Publisher と Subscriber（30 分）

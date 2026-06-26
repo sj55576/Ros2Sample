@@ -12,6 +12,18 @@
 
 ---
 
+## 図で見る TF の役割
+
+```mermaid
+flowchart TB
+    world["world<br/>地図・外界の基準"] --> robot["learning_robot<br/>移動するロボット本体"]
+    robot --> sensor["sensor_frame<br/>固定取り付けセンサー"]
+    sensor -. "検出点<br/>sensor_frame の座標" .-> object["object point"]
+    object -. "lookup_transform()" .-> worldpoint["world での位置に変換"]
+```
+
+TF は「どの座標系から見た位置なのか」をつなぐための仕組みです。センサーで見えた点をそのまま制御に使うのではなく、`sensor_frame -> learning_robot -> world` の変換をたどって、必要な基準座標へ写します。
+
 ## TF2 の概念
 
 ### TF とは?

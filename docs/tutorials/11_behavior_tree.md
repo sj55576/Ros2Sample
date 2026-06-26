@@ -8,6 +8,23 @@
 
 ---
 
+## 図で見る BT の実行順序
+
+```mermaid
+flowchart TB
+    root["Root"] --> fallback{"Fallback<br/>どれか成功すれば成功"}
+    fallback --> main["Sequence<br/>通常ナビゲーション"]
+    main --> plan["ComputePathToPose"]
+    plan --> follow["FollowPath"]
+    fallback --> recover["Sequence<br/>失敗時リカバリ"]
+    recover --> clear["ClearCostmap"]
+    clear --> spin["Spin"]
+    follow -. "SUCCESS" .-> done["Goal reached"]
+    follow -. "FAILURE" .-> recover
+```
+
+BT は上から下へ「状態を持った手順」を評価します。Sequence は全て成功する必要があり、Fallback は左の候補が失敗したときに右の候補へ切り替わります。この性質でリカバリ処理を自然に表現できます。
+
 ## ビヘイビアツリーとは
 
 ビヘイビアツリー（Behavior Tree: BT）は、ロボットや AI エージェントの行動を木構造で管理する手法です。もともとはゲーム AI（NPC の行動制御）で普及しましたが、その柔軟性とモジュール性の高さからロボティクスにも広く応用されています。Nav2 はビヘイビアツリーを使ってナビゲーション全体のシーケンスを制御します。

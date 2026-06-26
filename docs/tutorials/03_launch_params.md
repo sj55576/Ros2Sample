@@ -9,6 +9,21 @@
 
 ---
 
+## 図で見る起動設定の流れ
+
+```mermaid
+flowchart LR
+    launch["Launch file<br/>*.launch.py"] --> node["parameter_demo<br/>Node"]
+    yaml["YAML<br/>config/*.yaml"] --> launch
+    cli["CLI override<br/>-p name:=value"] --> launch
+    node --> declare["declare_parameter()"]
+    declare --> get["get_parameter()"]
+    paramcli["ros2 param set/get"] <--> node
+    node --> topic(("/robot_info"))
+```
+
+Launch ファイルは「どのノードを、どの設定で起動するか」をまとめる入口です。YAML は再利用しやすい既定値、CLI override は一時的な実験値、`ros2 param set` は実行中の調整に向いています。
+
 ## Part A: パラメータ
 
 ### 概念

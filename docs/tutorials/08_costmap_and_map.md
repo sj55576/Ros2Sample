@@ -9,6 +9,21 @@
 
 ---
 
+## 図で見るマップとコストマップ
+
+```mermaid
+flowchart TB
+    mapfile["静的マップ<br/>壁・固定障害物"] --> static["Static Layer"]
+    scan["LiDAR / scan<br/>動的障害物"] --> obstacle["Obstacle Layer"]
+    obstacle --> inflation["Inflation Layer<br/>ロボット半径ぶん膨張"]
+    static --> master["Master Costmap"]
+    inflation --> master
+    master --> planner["Planner<br/>長い経路を作る"]
+    master --> controller["Controller<br/>近くの危険を避ける"]
+```
+
+静的マップは「もともと知っている環境」、コストマップは「今走るための危険度マップ」です。障害物そのものだけでなく、ロボットの大きさを考慮して周囲にもコストを広げる点が重要です。
+
 ## OccupancyGrid とは
 
 `nav_msgs/OccupancyGrid` は ROS 2 において 2D 地図を表現する標準メッセージ型です。Nav2 の全コンポーネントがこの型を使って地図情報をやり取りします。

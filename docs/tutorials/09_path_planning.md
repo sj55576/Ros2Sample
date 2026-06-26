@@ -8,6 +8,22 @@
 
 ---
 
+## 図で見る A* の探索
+
+```mermaid
+flowchart LR
+    start["Start"] --> open["Open list<br/>探索候補"]
+    open --> current["f(n) が最小のセルを選ぶ"]
+    current --> goal{"Goal か"}
+    goal -- "はい" --> path["親ポインタを逆にたどり<br/>Path を復元"]
+    goal -- "いいえ" --> neighbors["隣接セルを評価"]
+    neighbors --> skip["障害物・探索済みは除外"]
+    skip --> update["g / h / f を更新して<br/>Open list へ"]
+    update --> open
+```
+
+A* は「近そうな候補を勘で選ぶ」のではなく、`g(n)` と `h(n)` を足した `f(n)` が最小のセルを毎回選びます。Open list はこれから調べる候補、Closed list はすでに調べ終えたセルです。
+
 ## 経路計画とは
 
 経路計画（Path Planning）とは、スタート地点からゴール地点まで障害物を回避した経路を自動的に生成する技術です。ロボットが自律移動するための前提となる能力であり、Nav2 では Planner Server がこの役割を担います。

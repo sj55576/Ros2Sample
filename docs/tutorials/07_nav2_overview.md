@@ -8,6 +8,24 @@
 
 ---
 
+## 図で見る Nav2 のデータフロー
+
+```mermaid
+flowchart LR
+    goal["NavigateToPose<br/>Goal"] --> bt["BT Navigator"]
+    bt --> planner["Planner Server<br/>/plan"]
+    planner --> controller["Controller Server<br/>/cmd_vel"]
+    controller --> robot["Robot Base<br/>ground_robot_sim"]
+    robot --> sensors["/odom /scan /tf"]
+    sensors --> costmap["Costmap 2D<br/>global / local"]
+    costmap --> planner
+    costmap --> controller
+    bt --> recovery["Recovery Server<br/>clear / spin / wait"]
+    recovery --> costmap
+```
+
+Nav2 は単一の巨大ノードではなく、役割ごとに分かれたサーバー群です。BT Navigator がタスクの順番を決め、Costmap が環境情報を共有し、Planner と Controller がそれぞれ「道を作る」「道を追う」を担当します。
+
 ## Nav2 とは何か
 
 Navigation2（Nav2）は ROS 2 向けの自律移動ロボット用ナビゲーションフレームワークです。目標地点への経路計画・経路追従・障害物回避・リカバリ動作を統合的に提供し、倉庫ロボット・サービスロボット・自動搬送車（AGV）などの実用システムに広く使われています。

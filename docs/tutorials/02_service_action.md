@@ -9,6 +9,22 @@
 
 ---
 
+## 図で見る通信方式の使い分け
+
+```mermaid
+flowchart TB
+    need["やりたいこと"] --> stream{"継続的に流れるデータか"}
+    stream -- "はい" --> topic["Topic<br/>例: /scan, /odom, /cmd_vel"]
+    stream -- "いいえ" --> wait{"処理がすぐ終わるか"}
+    wait -- "はい" --> service["Service<br/>例: emergency_stop, get_status"]
+    wait -- "いいえ" --> action["Action<br/>例: navigate_waypoints"]
+    action --> feedback["進捗 feedback"]
+    action --> cancel["途中 cancel"]
+    action --> result["最終 result"]
+```
+
+迷ったときは、まず「データが流れ続けるか」「完了まで待つ必要があるか」で分けると判断しやすくなります。サービスは短い確認や設定変更、アクションはナビゲーションのような長時間タスクに向いています。
+
 ## サービス vs トピック vs アクション
 
 ROS 2 には 3 種類の通信方式があります。用途に応じて使い分けることが重要です。

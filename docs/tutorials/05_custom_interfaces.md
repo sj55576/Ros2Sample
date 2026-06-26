@@ -12,6 +12,21 @@
 
 ---
 
+## 図で見るインターフェース生成
+
+```mermaid
+flowchart LR
+    msg["msg/RobotStatus.msg"] --> build["colcon build<br/>rosidl_generate_interfaces"]
+    srv["srv/GetRobotStatus.srv"] --> build
+    action["action/NavigateWaypoints.action"] --> build
+    build --> py["Python import<br/>sample_interfaces.msg"]
+    build --> cli["CLI introspection<br/>ros2 interface show"]
+    py --> nodes["drone_sim / ground_robot_sim<br/>各ノードで利用"]
+    cli --> learner["定義を読んで通信契約を確認"]
+```
+
+`.msg` / `.srv` / `.action` は単なるメモではなく、ビルド時に各言語向けの型へ変換される通信契約です。ノード実装を読む前に `ros2 interface show` で型を確認すると、どのフィールドが必須かを把握しやすくなります。
+
 ## なぜカスタムインターフェースが必要か
 
 ### 標準メッセージ型では足りない場合

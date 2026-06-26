@@ -9,6 +9,21 @@
 
 ---
 
+## 図で見る経路追従ループ
+
+```mermaid
+flowchart LR
+    path["/plan<br/>nav_msgs/Path"] --> follower["simple_path_follower<br/>Pure Pursuit"]
+    odom["/odom<br/>現在姿勢"] --> follower
+    follower --> lookahead["経路上の<br/>lookahead point"]
+    lookahead --> curvature["曲率 kappa を計算"]
+    curvature --> cmd["/cmd_vel<br/>linear.x / angular.z"]
+    cmd --> robot["ground_robot_sim"]
+    robot --> odom
+```
+
+経路追従は一度だけ計算して終わりではありません。ロボットが動くたびに `/odom` が変わり、ルックアヘッドポイントも進むため、制御ノードは周期的に速度コマンドを再計算します。
+
 ## 経路追従制御とは
 
 経路追従制御（Path Following Control）とは、Planner Server が生成した経路（`nav_msgs/Path`）に沿ってロボットを動かすための速度コマンド（`geometry_msgs/Twist`）を計算し続けるタスクです。Nav2 では Controller Server がこの役割を担います。

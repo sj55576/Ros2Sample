@@ -9,6 +9,18 @@
 
 ---
 
+## 図で見るトピック通信
+
+```mermaid
+flowchart LR
+    pub["minimal_publisher<br/>Node"] -- "std_msgs/String<br/>publish()" --> topic(("/chatter<br/>Topic"))
+    topic -- "callback(msg)" --> sub["minimal_subscriber<br/>Node"]
+    cli["ros2 topic echo /chatter"] -. "同じ Topic を購読" .-> topic
+    rate["ros2 topic hz /chatter"] -. "周期を計測" .-> topic
+```
+
+この図では、Publisher と Subscriber は互いを直接呼び出していません。両者は `/chatter` というトピック名と `std_msgs/String` というメッセージ型だけを共有しており、CLI ツールも同じトピックに横から参加できます。
+
 ## ROS 2 トピック通信とは
 
 トピック通信は ROS 2 の最も基本的な通信方式です。**Publisher** がトピックにメッセージを送信し、**Subscriber** がそのメッセージを受信します。送受信は非同期で行われ、Publisher は Subscriber の存在を知らなくても送信できます。

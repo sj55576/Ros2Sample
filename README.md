@@ -46,6 +46,17 @@
 
 検出結果は `colcon list` で確認できます。
 
+## チュートリアル
+
+各サンプルのビルド、起動、topic 確認、主要パラメータは次のチュートリアルから確認できます。
+
+| チュートリアル | 内容 |
+| --- | --- |
+| [`ground_robot_sim`](src/ground_robot_sim/README.md) | 差動二輪ロボット、LiDAR 停止、ウェイポイント追従、障害物回避、複数ロボット namespace |
+| [`drone_sim`](src/drone_sim/README.md) | クアッドローター、waypoint 飛行、高度維持、バッテリー監視、小規模 swarm |
+| [`manipulator_sim`](src/manipulator_sim/README.md) | 2自由度平面マニピュレータ、JointState / TF / tool pose、目標姿勢追従 |
+| [`docs/simulation_spec.md`](docs/simulation_spec.md) | 全サンプル共通の観測ポイント、topic / service / action、代表デモの詳細仕様 |
+
 ## 依存関係
 
 ### 基本ツール

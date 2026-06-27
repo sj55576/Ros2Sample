@@ -271,7 +271,7 @@ ros2 launch ros2_learning parameter_demo.launch.py
 
 ```bash
 # 利用可能な Launch ファイルを一覧表示
-ros2 launch ros2_learning --show-all
+ros2 pkg executables ros2_learning --launch
 
 # Launch ファイルの引数を確認
 ros2 launch ros2_learning pubsub_demo.launch.py --show-args
@@ -536,7 +536,7 @@ ros2 node list
 - `parameter_demo` ノードのパラメータを `ros2 param set` で動的に変更でき、ノードの動作が即座に変わること
 - YAML ファイルでパラメータを管理してノードを起動できること
 - Launch ファイルで複数ノードを一括起動し、引数でパラメータを上書きできること
-- `ros2 launch ros2_learning --show-all` で利用可能な Launch ファイルを確認できること
+- `ros2 pkg executables ros2_learning` でパッケージ内の実行可能ファイルを確認できること
 
 ### トラブルシューティング
 
@@ -551,7 +551,7 @@ ros2 node list
 ```bash
 colcon build --packages-select ros2_learning
 source install/setup.bash
-ros2 launch ros2_learning --show-all
+ros2 pkg executables ros2_learning
 ```
 
 **YAML ファイルのパラメータが反映されない場合**

@@ -70,6 +70,7 @@ source install/setup.bash
 | 11 | [ビヘイビアツリー入門](11_behavior_tree.md) | 45 分 | タスク管理とリカバリ |
 | 12 | [RViz 可視化](12_rviz_visualization.md) | 45 分 | TF、センサー、マップ、経路の可視化 |
 | 13 | [ROS 2 デバッグ入門](13_debugging_ros2_systems.md) | 45 分 | CLI と rqt_graph による切り分け |
+| 14 | [既存パッケージを読み解く](14_reading_existing_packages.md) | 60 分 | 実装コードの読み方と概念の対応 |
 
 ### 学習全体の見取り図
 
@@ -88,10 +89,10 @@ flowchart LR
     controller --> bt["11. Behavior Tree"]
     bt --> rviz["12. RViz で見る"]
     rviz --> debug["13. CLI で調べる"]
-    debug --> apps["既存パッケージを読む<br/>ground_robot_sim / drone_sim"]
+    debug --> apps["14. 既存パッケージを読む<br/>ground_robot_sim / drone_sim"]
 ```
 
-前半の 1〜6 は ROS 2 の共通部品を学ぶ段階です。7〜11 は、その部品を自律移動システムに組み合わせる段階です。12〜13 は、動作を目で確認し、問題を CLI で切り分けるための実践編です。途中で詰まった場合は、図の左側に戻って前提概念を確認してください。
+前半の 1〜6 は ROS 2 の共通部品を学ぶ段階です。7〜11 は、その部品を自律移動システムに組み合わせる段階です。12〜13 は、動作を目で確認し、問題を CLI で切り分けるための実践編です。14 は、学んだ概念が実際のパッケージでどう使われているかを読み解く総まとめです。途中で詰まった場合は、図の左側に戻って前提概念を確認してください。
 
 ---
 
@@ -180,6 +181,13 @@ TF、Odometry、LaserScan、OccupancyGrid、Path を RViz 上に表示し、CLI 
 `ros2 node`、`ros2 topic`、`ros2 service`、`ros2 action`、`ros2 param`、`tf2_echo`、`rqt_graph` を使って、ノードや topic が期待通りに動かない原因を順番に切り分けます。
 
 - 学習ファイル: `docs/tutorials/13_debugging_ros2_systems.md`
+
+### ステップ 14: 既存パッケージを読み解く（60 分）
+
+チュートリアル 01〜13 で学んだ概念が `ground_robot_sim`・`drone_sim`・`manipulator_sim` のソースコードでどう使われているかを読み解きます。各パッケージの「どのファイルから読むか」と、チュートリアル章との対応表を示します。
+
+- 学習ファイル: `docs/tutorials/14_reading_existing_packages.md`
+- 参照パッケージ: `src/ground_robot_sim/`、`src/drone_sim/`、`src/manipulator_sim/`
 
 ---
 

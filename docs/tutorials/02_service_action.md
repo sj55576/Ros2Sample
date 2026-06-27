@@ -387,3 +387,150 @@ self._flag_pub.publish(flag_msg)
 3. Result の `waypoints_completed` はどのような場面で使うか
 
 また、`navigate_waypoints_server.py` の `_execute_callback` を読んで、フィードバックがどのタイミングで送信されているかを確認してください。
+
+> 💡 演習のヒントと解答例は [こちら](answers/02_answers.md) を参照してください。
+
+---
+
+## 確認チェックリスト
+
+演習を終えたら、以下のチェックリストで学習内容を確認してください。
+
+### サービスの動作確認
+
+- [ ] サービスサーバーが正常に起動することを確認する
+
+```bash
+ros2 run ros2_learning minimal_service_server
+```
+
+期待される出力例:
+
+```
+[INFO] [minimal_service_server]: 'set_flag' サービスの待機を開始しました。
+```
+
+- [ ] `/set_flag` サービスがサービス一覧に表示されることを確認する（サーバーを起動した状態で別ターミナルで実行）
+
+```bash
+ros2 service list
+```
+
+期待される出力例（`/set_flag` が含まれること）:
+
+```
+/set_flag
+/minimal_service_server/describe_parameters
+/minimal_service_server/get_parameter_types
+/minimal_service_server/get_parameters
+/minimal_service_server/list_parameters
+/minimal_service_server/set_parameters
+/minimal_service_server/set_parameters_atomically
+```
+
+- [ ] CLI でサービスを呼び出してレスポンスが返ることを確認する
+
+```bash
+ros2 service call /set_flag std_srvs/srv/SetBool "{data: true}"
+```
+
+期待される出力例:
+
+```
+requester: making request: std_srvs.srv.SetBool_Request(data=True)
+
+response:
+  std_srvs.srv.SetBool_Response(success=True, message='フラグをONにしました')
+```
+
+- [ ] サービスクライアントが正常に動作することを確認する（サーバーを起動した状態で別ターミナルで実行）
+
+```bash
+ros2 run ros2_learning minimal_service_client
+```
+
+期待される出力例:
+
+```
+[INFO] [minimal_service_client]: レスポンス受信: success=True, message="フラグをONにしました"
+[INFO] [minimal_service_client]: レスポンス受信: success=True, message="フラグをOFFにしました"
+```
+
+- [ ] Launch ファイルでサーバーとクライアントを同時に起動できることを確認する
+
+```bash
+ros2 launch ros2_learning service_demo.launch.py
+```
+
+### アクションの動作確認
+
+- [ ] アクションデモを Launch ファイルで起動できることを確認する
+
+```bash
+ros2 launch ros2_learning action_demo.launch.py
+```
+
+- [ ] アクション一覧にアクションが表示されることを確認する（起動した状態で別ターミナルで実行）
+
+```bash
+ros2 action list
+```
+
+期待される出力例（`/navigate_waypoints` が含まれること）:
+
+```
+/navigate_waypoints
+```
+
+- [ ] アクションの型を確認する
+
+```bash
+ros2 action type /navigate_waypoints
+```
+
+期待される出力例:
+
+```
+sample_interfaces/action/NavigateWaypoints
+```
+
+- [ ] アクションの詳細情報を確認する
+
+```bash
+ros2 action info /navigate_waypoints
+```
+
+期待される出力例:
+
+```
+Action: /navigate_waypoints
+Action clients: 1
+    /minimal_action_client
+Action servers: 1
+    /minimal_action_server
+```
+
+### 完了条件
+
+- サービスサーバーを起動して CLI から `/set_flag` サービスを呼び出し、正しいレスポンスが返ること
+- サービスクライアントがサーバーへ自動でリクエストを送り、レスポンスを受け取れること
+- `ros2 action list` でアクションが表示され、型が `sample_interfaces/action/NavigateWaypoints` であること
+- サービス・トピック・アクションの使い分け（継続データ / 即時応答 / 長時間タスク）を説明できること
+
+### トラブルシューティング
+
+**サービスクライアントを起動しても「サービスがまだ起動していません」が繰り返し表示される場合**
+
+サービスサーバーが起動していないか、別の ROS_DOMAIN_ID で起動している可能性があります。別ターミナルでサーバーを先に起動してから、クライアントを起動してください。
+
+**`ros2 service call` でエラーが出る場合**
+
+サービス型のフォーマットが正しいか確認してください。`std_srvs/srv/SetBool` の場合、リクエストフィールドは `data` のみです:
+
+```bash
+ros2 interface show std_srvs/srv/SetBool
+```
+
+**アクションが `ros2 action list` に表示されない場合**
+
+アクションサーバーが起動していない可能性があります。`ros2 launch ros2_learning action_demo.launch.py` でサーバーとクライアントを両方起動しているか確認してください。

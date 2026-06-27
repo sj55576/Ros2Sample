@@ -270,3 +270,127 @@ Navigation2 のチュートリアル（ステップ 7〜11）は、ステップ 
 3. **コードを改造する**: サンプルコードのパラメータ値や処理内容を変えてみることで、各要素の役割が体感的に理解できます。
 4. **既存パッケージを読む**: `drone_sim` や `ground_robot_sim` のコードは、実際のロボットシステムでの ROS 2 の使い方を示しています。チュートリアルを終えたら積極的に読んでみましょう。
 5. **エラーを恐れない**: ビルドエラーや実行時エラーのメッセージは情報の宝庫です。エラー文をよく読むと解決策が見つかることがほとんどです。
+
+---
+
+## 確認チェックリスト
+
+このチェックリストを使って、チュートリアルを始める前に開発環境が正しくセットアップされているかを確認してください。
+
+### 環境セットアップの確認
+
+- [ ] ROS 2 Jazzy のソースを読み込めることを確認する
+
+```bash
+source /opt/ros/jazzy/setup.bash
+ros2 --version
+```
+
+期待される出力例:
+
+```
+ros2 jazzy
+```
+
+- [ ] ワークスペースをビルドできることを確認する
+
+```bash
+cd ~/Ros2Sample
+colcon build --packages-select ros2_learning sample_interfaces
+```
+
+期待される出力例:
+
+```
+Starting >>> sample_interfaces
+Finished <<< sample_interfaces [...]
+Starting >>> ros2_learning
+Finished <<< ros2_learning [...]
+
+Summary: 2 packages finished [...]
+```
+
+- [ ] インストール済みパッケージが認識されることを確認する
+
+```bash
+source install/setup.bash
+ros2 pkg list | grep ros2_learning
+ros2 pkg list | grep sample_interfaces
+```
+
+期待される出力例:
+
+```
+ros2_learning
+sample_interfaces
+```
+
+- [ ] `ros2_learning` パッケージの実行ファイルが見えることを確認する
+
+```bash
+ros2 pkg executables ros2_learning
+```
+
+期待される出力例:
+
+```
+ros2_learning lifecycle_demo
+ros2_learning minimal_action_client
+ros2_learning minimal_action_server
+ros2_learning minimal_publisher
+ros2_learning minimal_service_client
+ros2_learning minimal_service_server
+ros2_learning minimal_subscriber
+ros2_learning parameter_demo
+ros2_learning tf_broadcaster_demo
+ros2_learning tf_listener_demo
+```
+
+- [ ] カスタムインターフェースが認識されることを確認する
+
+```bash
+ros2 interface list | grep sample_interfaces
+```
+
+期待される出力例:
+
+```
+sample_interfaces/action/NavigateWaypoints
+sample_interfaces/msg/RobotStatus
+sample_interfaces/srv/GetRobotStatus
+```
+
+### 完了条件
+
+上記のコマンドがすべてエラーなく動作し、期待される出力が確認できれば、チュートリアル 01 に進む準備ができています。
+
+### トラブルシューティング
+
+**`ros2: command not found` が表示される場合**
+
+ROS 2 のセットアップスクリプトを読み込んでいない可能性があります。以下を実行してください:
+
+```bash
+source /opt/ros/jazzy/setup.bash
+```
+
+毎回実行する手間を省くには `~/.bashrc` に追記します:
+
+```bash
+echo "source /opt/ros/jazzy/setup.bash" >> ~/.bashrc
+source ~/.bashrc
+```
+
+**`colcon build` でエラーが出る場合**
+
+パッケージの依存関係が不足している可能性があります。以下を試してください:
+
+```bash
+sudo apt update
+rosdep update
+rosdep install --from-paths src --ignore-src -r -y
+```
+
+**`ros2 pkg list` にパッケージが表示されない場合**
+
+`source install/setup.bash` を実行し忘れている可能性があります。ビルド後は必ずこのコマンドを実行してください。ターミナルを新しく開いた場合も同様です。

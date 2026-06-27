@@ -454,3 +454,198 @@ ros2 topic hz /imu
 # ノード内のコールバックグループとエグゼキュータの確認
 ros2 node info /complementary_filter
 ```
+
+> 💡 演習のヒントと解答例は [こちら](answers/06_answers.md) を参照してください。
+
+---
+
+## 確認チェックリスト
+
+このチュートリアルを完了したら、以下の項目を順番に確認してください。
+
+### チェック 1: ライフサイクルノードの起動と初期状態確認
+
+- [ ] `lifecycle_demo` ノードを起動して初期状態が `unconfigured` であることを確認する
+
+```bash
+ros2 run ros2_learning lifecycle_demo
+```
+
+別ターミナルで現在の状態を確認します。
+
+```bash
+ros2 lifecycle get /lifecycle_demo
+```
+
+期待される出力:
+```
+unconfigured [1]
+```
+
+### チェック 2: 状態遷移の確認（configure → activate）
+
+- [ ] `configure` 遷移が成功することを確認する
+
+```bash
+ros2 lifecycle set /lifecycle_demo configure
+```
+
+期待される出力:
+```
+Transitioning successful
+```
+
+確認:
+```bash
+ros2 lifecycle get /lifecycle_demo
+```
+
+期待される出力:
+```
+inactive [2]
+```
+
+- [ ] `activate` 遷移が成功し、メッセージ配信が始まることを確認する
+
+```bash
+ros2 lifecycle set /lifecycle_demo activate
+```
+
+期待される出力:
+```
+Transitioning successful
+```
+
+配信されているメッセージを確認します。
+
+```bash
+ros2 topic echo /lifecycle_output
+```
+
+期待される出力（1 Hz でメッセージが流れる）:
+```
+data: 'Lifecycle demo: count=1'
+---
+data: 'Lifecycle demo: count=2'
+---
+```
+
+### チェック 3: 一時停止と再開の確認
+
+- [ ] `deactivate` でメッセージ配信が停止することを確認する
+
+```bash
+ros2 lifecycle set /lifecycle_demo deactivate
+```
+
+`ros2 topic echo /lifecycle_output` で出力が止まることを確認します。
+
+- [ ] `activate` で配信が再開することを確認する
+
+```bash
+ros2 lifecycle set /lifecycle_demo activate
+```
+
+### チェック 4: クリーンアップ確認
+
+- [ ] `deactivate` → `cleanup` の順で初期状態に戻せることを確認する
+
+```bash
+ros2 lifecycle set /lifecycle_demo deactivate
+ros2 lifecycle set /lifecycle_demo cleanup
+ros2 lifecycle get /lifecycle_demo
+```
+
+期待される出力:
+```
+unconfigured [1]
+```
+
+### チェック 5: QoS 互換性の確認
+
+- [ ] `ros2 topic info` で QoS プロファイルを確認できることを確認する（`sensor_fusion_sim` 利用時）
+
+```bash
+ros2 topic info /imu --verbose
+```
+
+期待される出力（パブリッシャー側）:
+```
+Publisher count: 1
+Node name: noisy_sensor_node
+QoS profile:
+  Reliability: BEST_EFFORT
+  Durability: VOLATILE
+  History (Depth): KEEP_LAST (10)
+```
+
+### チェック 6: ライフサイクルノードの状態一覧確認
+
+- [ ] `lifecycle_demo` ノードで利用可能な遷移一覧が表示されることを確認する
+
+```bash
+ros2 lifecycle get /lifecycle_demo
+ros2 lifecycle list /lifecycle_demo
+```
+
+`unconfigured` 状態での期待される出力:
+```
+- configure [1]
+- shutdown [5]
+```
+
+`inactive` 状態での期待される出力:
+```
+- activate [3]
+- cleanup [2]
+- shutdown [5]
+```
+
+### 完了条件
+
+- `lifecycle_demo` ノードを `unconfigured → inactive → active → inactive → unconfigured` と手動で遷移できた
+- `active` 状態のときだけ `/lifecycle_output` にメッセージが流れることを確認した
+- QoS の Reliability（`BEST_EFFORT` / `RELIABLE`）の違いを理解し、`ros2 topic info --verbose` で確認できた
+- `MutuallyExclusiveCallbackGroup` と `ReentrantCallbackGroup` の違いを説明できる
+
+### トラブルシューティング
+
+**`ros2 lifecycle set` で `Transitioning failed` が返される場合**
+
+遷移の順序が正しくない可能性があります。ライフサイクルの遷移は順序が決まっています。
+
+```bash
+# 現在の状態と可能な遷移を確認する
+ros2 lifecycle get /lifecycle_demo
+ros2 lifecycle list /lifecycle_demo
+```
+
+**`ros2 topic echo /lifecycle_output` で何も出力されない場合**
+
+ノードが `active` 状態になっていない可能性があります。
+
+```bash
+ros2 lifecycle get /lifecycle_demo
+# inactive であれば activate する
+ros2 lifecycle set /lifecycle_demo activate
+```
+
+**QoS 不一致で通信が確立されない場合**
+
+パブリッシャーとサブスクライバーの QoS が互換していないと接続されません。
+
+```bash
+# トピックの QoS 設定を確認して不一致を特定する
+ros2 topic info /imu --verbose
+```
+
+`BEST_EFFORT` パブリッシャーに `RELIABLE` サブスクライバーを接続しようとすると接続が確立されません。どちらかに合わせて修正が必要です。
+
+**`sensor_fusion_demo.launch.py` が見つからないエラーが出る場合**
+
+```bash
+# sensor_fusion_sim パッケージが正しくビルドされているか確認する
+colcon build --packages-select sensor_fusion_sim
+source install/setup.bash
+ros2 launch sensor_fusion_sim sensor_fusion_demo.launch.py
+```

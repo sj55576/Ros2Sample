@@ -271,7 +271,7 @@ ros2 launch ros2_learning parameter_demo.launch.py
 
 ```bash
 # 利用可能な Launch ファイルを一覧表示
-ros2 launch ros2_learning --show-all
+ros2 pkg executables ros2_learning --launch
 
 # Launch ファイルの引数を確認
 ros2 launch ros2_learning pubsub_demo.launch.py --show-args
@@ -396,3 +396,170 @@ ros2 topic echo /drone_2/odom --once
 ```
 
 `/drone_1/odom` と `/drone_2/odom` が独立してパブリッシュされていることを確認してください。これが名前空間を使う利点です。複数の同じノードを衝突なく起動できます。
+
+> 💡 演習のヒントと解答例は [こちら](answers/03_answers.md) を参照してください。
+
+---
+
+## 確認チェックリスト
+
+演習を終えたら、以下のチェックリストで学習内容を確認してください。
+
+### パラメータの動作確認
+
+- [ ] `parameter_demo` ノードが正常に起動することを確認する
+
+```bash
+ros2 run ros2_learning parameter_demo
+```
+
+期待される出力例:
+
+```
+[INFO] [parameter_demo]: パラメータデモ起動: robot_name=learning_bot, max_speed=1.0, update_rate_hz=2.0, enable_logging=True
+[INFO] [parameter_demo]: robot_info: robot_name=learning_bot, max_speed=1.00, enable_logging=True
+```
+
+- [ ] ノードのパラメータ一覧を表示できることを確認する（ノードを起動した状態で別ターミナルで実行）
+
+```bash
+ros2 param list /parameter_demo
+```
+
+期待される出力例:
+
+```
+/parameter_demo:
+  enable_logging
+  max_speed
+  robot_name
+  update_rate_hz
+  use_sim_time
+```
+
+- [ ] パラメータの値を取得できることを確認する
+
+```bash
+ros2 param get /parameter_demo max_speed
+ros2 param get /parameter_demo robot_name
+```
+
+期待される出力例:
+
+```
+Double value is: 1.0
+String value is: learning_bot
+```
+
+- [ ] パラメータを動的に変更してノードの動作が変わることを確認する
+
+```bash
+ros2 param set /parameter_demo max_speed 2.0
+ros2 param set /parameter_demo robot_name "test_bot"
+```
+
+期待されるログ出力例:
+
+```
+[INFO] [parameter_demo]: パラメータ変更: max_speed 1.0 -> 2.0
+[INFO] [parameter_demo]: パラメータ変更: robot_name 'learning_bot' -> 'test_bot'
+```
+
+- [ ] 起動時にパラメータを指定して動作が変わることを確認する
+
+```bash
+ros2 run ros2_learning parameter_demo \
+    --ros-args -p max_speed:=3.0 -p robot_name:=fast_bot
+# 別ターミナルで
+ros2 param get /parameter_demo max_speed
+```
+
+期待される出力例:
+
+```
+Double value is: 3.0
+```
+
+### Launch ファイルの動作確認
+
+- [ ] `pubsub_demo.launch.py` で Publisher と Subscriber を同時に起動できることを確認する
+
+```bash
+ros2 launch ros2_learning pubsub_demo.launch.py
+```
+
+- [ ] Launch ファイルに引数を渡して動作が変わることを確認する
+
+```bash
+ros2 launch ros2_learning pubsub_demo.launch.py publish_rate_hz:=5.0
+# 別ターミナルで
+ros2 topic hz /chatter
+```
+
+期待される出力例:
+
+```
+average rate: 5.000
+	min: 0.199s max: 0.201s std dev: 0.00012s window: 10
+```
+
+- [ ] `parameter_demo.launch.py` で YAML ファイルを使ってノードを起動できることを確認する
+
+```bash
+ros2 launch ros2_learning parameter_demo.launch.py
+```
+
+- [ ] Launch ファイルの引数一覧を確認できることを確認する
+
+```bash
+ros2 launch ros2_learning pubsub_demo.launch.py --show-args
+```
+
+期待される出力例:
+
+```
+Arguments (pass arguments as '<name>:=<value>'):
+
+    'publish_rate_hz':
+        Publisher の送信レート (Hz)
+        (default: '1.0')
+```
+
+- [ ] 起動中のノード一覧を確認できることを確認する（Launch ファイルを起動した状態で別ターミナルで実行）
+
+```bash
+ros2 node list
+```
+
+### 完了条件
+
+- `parameter_demo` ノードのパラメータを `ros2 param set` で動的に変更でき、ノードの動作が即座に変わること
+- YAML ファイルでパラメータを管理してノードを起動できること
+- Launch ファイルで複数ノードを一括起動し、引数でパラメータを上書きできること
+- `ros2 pkg executables ros2_learning` でパッケージ内の実行可能ファイルを確認できること
+
+### トラブルシューティング
+
+**`ros2 param set` を実行しても変更が反映されない場合**
+
+ノードが動的パラメータ変更コールバック（`add_on_set_parameters_callback`）を登録していないか、コールバックが `SetParametersResult(successful=True)` を返していない可能性があります。`parameter_demo.py` の `_on_parameter_change` メソッドを確認してください。
+
+**Launch ファイルが見つからない場合**
+
+ビルドと `source install/setup.bash` を実行しているか確認してください。Launch ファイルはビルド後にインストールディレクトリにコピーされます:
+
+```bash
+colcon build --packages-select ros2_learning
+source install/setup.bash
+ros2 pkg executables ros2_learning
+```
+
+**YAML ファイルのパラメータが反映されない場合**
+
+YAML ファイルの書式を確認してください。`ros__parameters`（アンダースコア 2 つ）の下にパラメータを書く必要があります。ノード名も正確に一致させてください:
+
+```yaml
+parameter_demo:
+  ros__parameters:
+    robot_name: "yaml_bot"
+```

@@ -326,3 +326,177 @@ ros2 run tf2_ros tf2_echo base_link tool
 ```
 
 `base_link → link1 → link2 → tool` の TF チェーンが確認できます。
+
+> 💡 演習のヒントと解答例は [こちら](answers/04_answers.md) を参照してください。
+
+---
+
+## 確認チェックリスト
+
+このチュートリアルを完了したら、以下の項目を順番に確認してください。
+
+### チェック 1: TF ブロードキャスターの起動と確認
+
+- [ ] `tf_broadcaster_demo` を起動してブロードキャストが動作することを確認する
+
+```bash
+ros2 run ros2_learning tf_broadcaster_demo
+```
+
+別ターミナルで `/tf` トピックを確認します。
+
+```bash
+ros2 topic echo /tf
+```
+
+期待される出力例:
+```
+transforms:
+- header:
+    stamp:
+      sec: 1234567890
+      nanosec: 123456789
+    frame_id: world
+  child_frame_id: learning_robot
+  transform:
+    translation:
+      x: 1.9...
+      y: 0.3...
+      z: 0.0
+    rotation:
+      x: 0.0
+      y: 0.0
+      z: 0.1...
+      w: 0.9...
+---
+```
+
+- [ ] `/tf_static` トピックで静的変換が配信されていることを確認する
+
+```bash
+ros2 topic echo /tf_static
+```
+
+期待される出力例（`learning_robot → sensor_frame` の固定変換）:
+```
+transforms:
+- header:
+    frame_id: learning_robot
+  child_frame_id: sensor_frame
+  transform:
+    translation:
+      x: 0.0
+      y: 0.0
+      z: 0.1
+    rotation:
+      w: 1.0
+---
+```
+
+### チェック 2: TF ツリーの可視化
+
+- [ ] `view_frames` で TF ツリー構造が正しいことを確認する
+
+```bash
+ros2 run tf2_tools view_frames
+```
+
+期待される出力（ターミナル上）:
+```
+Listening to tf data during 5 seconds...
+Generating graph in current folder: frames.pdf
+```
+
+生成された `frames.pdf` を開いて `world → learning_robot → sensor_frame` の 3 段ツリーが表示されることを確認します。
+
+### チェック 3: TF リスナーの動作確認
+
+- [ ] `tf_listener_demo` を起動して変換が正しく取得できることを確認する
+
+ターミナル 1 でブロードキャスターを起動したまま、ターミナル 2 で実行します。
+
+```bash
+ros2 run ros2_learning tf_listener_demo
+```
+
+期待されるログ出力（1 Hz で表示）:
+```
+[INFO] [tf_listener_demo]: sensor_frame の距離: 2.1... m
+[INFO] [tf_listener_demo]: sensor_frame の距離: 2.0... m
+```
+
+- [ ] `tf2_echo` でリアルタイム変換を確認する
+
+```bash
+ros2 run tf2_ros tf2_echo world sensor_frame
+```
+
+期待される出力:
+```
+At time ...
+- Translation: [x, y, z]
+- Rotation: in Quaternion [x, y, z, w]
+```
+
+### チェック 4: ランチファイルでの一括起動
+
+- [ ] `tf_demo.launch.py` で両ノードが同時に起動することを確認する
+
+```bash
+ros2 launch ros2_learning tf_demo.launch.py
+```
+
+期待されるログ（両ノードが起動してリスナーが変換を取得）:
+```
+[tf_broadcaster_demo]: Broadcasting TF...
+[tf_listener_demo]: sensor_frame の距離: 2.0... m
+```
+
+### チェック 5: TF 配信レートの確認
+
+- [ ] `/tf` トピックの配信レートが約 30 Hz であることを確認する
+
+```bash
+ros2 topic hz /tf
+```
+
+期待される出力:
+```
+average rate: 30.0...
+```
+
+### 完了条件
+
+- `world → learning_robot → sensor_frame` の 3 段 TF ツリーが確認できた
+- TF リスナーが `sensor_frame` の位置を 1 Hz でログ出力している
+- `/tf` が約 30 Hz、`/tf_static` がラッチ配信されていることを確認した
+- `tf2_echo` でリアルタイムの変換値が取得できた
+
+### トラブルシューティング
+
+**`LookupException: Could not find a connection...` が表示される場合**
+
+ブロードキャスターが起動していないか、フレーム名が一致していない可能性があります。
+
+```bash
+# 現在配信中のフレーム一覧を確認する
+ros2 topic echo /tf --once
+ros2 topic echo /tf_static --once
+```
+
+**TF リスナーが `変換が見つかりません` を繰り返す場合**
+
+リスナー起動直後は TF バッファへの蓄積に数秒かかります。数秒待っても改善しない場合はブロードキャスターが起動しているか確認してください。
+
+**`view_frames` で `frames.pdf` が生成されない場合**
+
+`tf2_tools` がインストールされているか確認します。
+
+```bash
+ros2 pkg list | grep tf2_tools
+```
+
+インストールされていない場合:
+```bash
+sudo apt install ros-jazzy-tf2-tools
+```

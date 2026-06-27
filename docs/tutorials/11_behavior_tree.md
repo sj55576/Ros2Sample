@@ -334,3 +334,132 @@ ros2 topic echo /behavior_tree_log
 - ゴールに到達したとき、最後に `SUCCESS` を返すノードは何か
 
 ログを読む練習をすることで、ナビゲーションの問題が発生したときのデバッグ力が大きく向上します。
+
+> 💡 演習のヒントと解答例は [こちら](answers/11_answers.md) を参照してください。
+
+---
+
+## 確認チェックリスト
+
+このチュートリアルを完了したら、以下の項目を順番に確認してください。
+
+### チェック 1: BT の基本要素を確認する（概念理解）
+
+以下の問いに答えられるか確認してください:
+
+- [ ] `Sequence` ノードはいつ `FAILURE` を返すか？（1 つでも子が失敗したとき）
+- [ ] `Fallback` ノードはいつ `SUCCESS` を返すか？（1 つでも子が成功したとき）
+- [ ] `RUNNING` を返すノードとはどういう意味か？（まだ処理中、次の tick でも呼ばれる）
+
+### チェック 2: デフォルト BT ファイルを確認できる
+
+```bash
+cat /opt/ros/jazzy/share/nav2_bt_navigator/behavior_trees/navigate_to_pose_w_replanning_and_recovery.xml
+```
+
+期待される出力（抜粋）:
+
+```xml
+<root main_tree_to_execute="MainTree">
+  <BehaviorTree ID="MainTree">
+    <RecoveryNode number_of_retries="6" name="NavigateRecovery">
+      <PipelineSequence name="NavigateWithReplanning">
+        <RateController hz="1.0">
+          <RecoveryNode number_of_retries="1" name="ComputePathRecovery">
+            <ComputePathToPose goal="{goal}" path="{path}" .../>
+            ...
+          </RecoveryNode>
+        </RateController>
+        ...
+      </PipelineSequence>
+    </RecoveryNode>
+  </BehaviorTree>
+</root>
+```
+
+- [ ] XML ファイルが表示される
+- [ ] `ComputePathToPose` と `FollowPath` のノードが確認できる
+- [ ] `RateController` デコレータでリプランニング周期が制御されていることが確認できる
+
+### チェック 3: /behavior_tree_log トピックを確認できる
+
+Nav2 が起動している状態で:
+
+```bash
+ros2 topic echo /behavior_tree_log
+```
+
+期待される出力（抜粋）:
+
+```yaml
+event_log:
+  - node_name: ComputePathToPose
+    node_status: RUNNING
+  - node_name: ComputePathToPose
+    node_status: SUCCESS
+  - node_name: FollowPath
+    node_status: RUNNING
+```
+
+- [ ] `/behavior_tree_log` トピックが存在する
+- [ ] `RUNNING` → `SUCCESS` / `FAILURE` の遷移が確認できる
+
+### チェック 4: BT ログからナビゲーション状態を読み取れる
+
+```bash
+# ナビゲーションを開始しながらログを確認
+ros2 topic echo /behavior_tree_log &
+ros2 action send_goal /navigate_to_pose nav2_msgs/action/NavigateToPose \
+  "{pose: {header: {frame_id: 'map'}, pose: {position: {x: 1.0, y: 0.0}}}}"
+```
+
+- [ ] `ComputePathToPose` が最初に `RUNNING` になることを確認できる
+- [ ] 経路計画完了後に `FollowPath` が `RUNNING` になることを確認できる
+- [ ] ゴール到達後にどのノードが最後に `SUCCESS` を返すか確認できる
+
+### チェック 5: BT の構造と Nav2 の動作の対応を説明できる
+
+以下の対応を口頭または文章で説明できるか確認してください:
+
+- [ ] `ComputePathToPose` ノード = Planner Server の呼び出しに対応する
+- [ ] `FollowPath` ノード = Controller Server の呼び出しに対応する
+- [ ] `ClearEntireCostmap` ノード = コストマップのリセット（リカバリ）に対応する
+- [ ] `RateController` デコレータ = 定期的なリプランニングのトリガーに対応する
+
+### 完了条件
+
+上記チェックがすべて完了したら、このチュートリアルの学習目標を達成しています:
+
+- [ ] Sequence / Fallback / Action / Condition / Decorator の動作を説明できる
+- [ ] `Fallback` を使ったリカバリパターンを設計できる
+- [ ] Nav2 の `/behavior_tree_log` を見てナビゲーションの状態を把握できる
+- [ ] FSM と BT の拡張性・保守性の違いを説明できる
+
+### トラブルシューティング
+
+**`/behavior_tree_log` トピックが存在しない場合**
+
+```bash
+# Nav2 が起動しているか確認
+ros2 node list | grep bt_navigator
+# → /bt_navigator が表示されるはず
+
+# Nav2 の起動コマンド例（シミュレーション環境）
+ros2 launch nav2_bringup navigation_launch.py use_sim_time:=True
+```
+
+**BT XML ファイルが見つからない場合**
+
+```bash
+# インストール済みの BT ファイルを検索
+find /opt/ros/jazzy -name "*.xml" -path "*/behavior_trees/*" 2>/dev/null
+```
+
+**`/behavior_tree_log` のログが流れない場合**
+
+ナビゲーションコマンドを送信してからでないとログが出ません。`/navigate_to_pose` アクションでゴールを指定してから確認してください:
+
+```bash
+ros2 action send_goal /navigate_to_pose nav2_msgs/action/NavigateToPose \
+  "{pose: {header: {frame_id: 'map'}, pose: {position: {x: 1.0, y: 0.0}, orientation: {w: 1.0}}}}"
+```

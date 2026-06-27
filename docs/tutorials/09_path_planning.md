@@ -304,3 +304,162 @@ def calculate_path_length(path: Path) -> float:
         total += math.sqrt(dx**2 + dy**2)
     return total
 ```
+
+> 💡 演習のヒントと解答例は [こちら](answers/09_answers.md) を参照してください。
+
+---
+
+## 確認チェックリスト
+
+このチュートリアルを完了したら、以下の項目を順番に確認してください。
+
+### チェック 1: simple_path_planner が起動できる
+
+```bash
+# ターミナル 1: マップパブリッシャーを先に起動
+ros2 run nav2_learning simple_map_publisher
+
+# ターミナル 2: 経路計画ノードを起動
+ros2 run nav2_learning simple_path_planner
+```
+
+```bash
+# ノードが起動しているか確認
+ros2 node list
+```
+
+期待される出力:
+
+```
+/simple_map_publisher
+/simple_path_planner
+```
+
+- [ ] `/simple_path_planner` ノードがリストに表示される
+
+### チェック 2: サービスコールで経路が計画できる
+
+```bash
+ros2 service call /plan_path nav2_learning/srv/PlanPath \
+  "{start: {x: 0.0, y: 0.0}, goal: {x: 0.8, y: 0.8}}"
+```
+
+期待される出力（抜粋）:
+
+```
+response:
+  success: True
+  message: Path found with N nodes explored
+```
+
+- [ ] `success: True` が返ってくる
+- [ ] ログにノード探索数（例: `Explored nodes: 42`）が表示される
+
+### チェック 3: /plan トピックに経路が配信されている
+
+```bash
+ros2 topic echo /plan --once
+```
+
+期待される出力（抜粋）:
+
+```yaml
+header:
+  frame_id: map
+poses:
+  - pose:
+      position:
+        x: 0.05
+        y: 0.05
+  - pose:
+      position:
+        x: 0.15
+        y: 0.15
+  ...
+```
+
+- [ ] `/plan` トピックに `poses` リストが含まれている
+- [ ] スタート付近からゴール付近まで座標が続いている
+
+### チェック 4: ヒューリスティックなし（Dijkstra）でノード数が増える
+
+```bash
+# ヒューリスティックを 0 にする
+ros2 param set /simple_path_planner cost_threshold 50  # デフォルトに戻す
+```
+
+`simple_path_planner.py` でヒューリスティックを `return 0.0` に変更してリビルド後:
+
+```bash
+colcon build --packages-select nav2_learning
+source install/setup.bash
+ros2 run nav2_learning simple_path_planner &
+ros2 service call /plan_path nav2_learning/srv/PlanPath \
+  "{start: {x: 0.0, y: 0.0}, goal: {x: 0.8, y: 0.8}}"
+```
+
+- [ ] ヒューリスティックなし時の探索ノード数がヒューリスティックあり時より多い
+- [ ] どちらの場合も生成される経路の長さは同じ（最適性の保証）
+
+### チェック 5: パラメータを動的に変更できる
+
+```bash
+# 障害物閾値を変更
+ros2 param set /simple_path_planner cost_threshold 30
+
+# 斜め移動を無効化
+ros2 param set /simple_path_planner diagonal_movement false
+```
+
+```bash
+# パラメータが変更されたか確認
+ros2 param get /simple_path_planner cost_threshold
+ros2 param get /simple_path_planner diagonal_movement
+```
+
+- [ ] `cost_threshold` の変更が反映される
+- [ ] `diagonal_movement: false` にすると経路が L 字型になる
+
+### 完了条件
+
+上記チェックがすべて完了したら、このチュートリアルの学習目標を達成しています:
+
+- [ ] A* の `f(n) = g(n) + h(n)` を説明できる
+- [ ] ヒューリスティック関数の役割（探索効率の向上）を説明できる
+- [ ] `simple_path_planner` を起動してサービスコールで経路を計画できる
+- [ ] `/plan` トピックで配信された経路を RViz または `echo` で確認できる
+
+### トラブルシューティング
+
+**`service call` が `success: False` を返す場合**
+
+```bash
+# マップが配信されているか確認
+ros2 topic echo /map --once
+# → データが表示されない場合は simple_map_publisher が起動していない
+
+# スタート/ゴール座標がマップ範囲内かを確認
+# デフォルトマップは origin=(-1.0, -1.0), width=height=20, resolution=0.1
+# → ワールド座標の有効範囲は x: -1.0〜1.0, y: -1.0〜1.0
+```
+
+**`/plan` トピックにデータが来ない場合**
+
+```bash
+# サービスコールが成功しているか確認
+ros2 service call /plan_path nav2_learning/srv/PlanPath \
+  "{start: {x: 0.0, y: 0.0}, goal: {x: 0.5, y: 0.5}}"
+# success: True が返れば /plan に配信されているはず
+
+# トピックが存在するか確認
+ros2 topic list | grep plan
+```
+
+**ログに「探索ノード数」が表示されない場合**
+
+`simple_path_planner.py` のログレベルを確認し、`INFO` レベル以上で出力されるようにしてください:
+
+```bash
+ros2 run nav2_learning simple_path_planner \
+  --ros-args --log-level INFO
+```

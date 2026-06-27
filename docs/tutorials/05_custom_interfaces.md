@@ -395,3 +395,173 @@ ros2 interface list | grep sample_interfaces
 # インターフェース型のパッケージ一覧
 ros2 interface packages
 ```
+
+> 💡 演習のヒントと解答例は [こちら](answers/05_answers.md) を参照してください。
+
+---
+
+## 確認チェックリスト
+
+このチュートリアルを完了したら、以下の項目を順番に確認してください。
+
+### チェック 1: sample_interfaces のビルド確認
+
+- [ ] `sample_interfaces` パッケージが正常にビルドできることを確認する
+
+```bash
+colcon build --packages-select sample_interfaces
+source install/setup.bash
+```
+
+期待される出力:
+```
+Starting >>> sample_interfaces
+Finished <<< sample_interfaces [...]
+Summary: 1 package finished [...]
+```
+
+### チェック 2: インターフェースが認識されていることを確認する
+
+- [ ] `ros2 interface list` で `sample_interfaces` の型が表示されることを確認する
+
+```bash
+ros2 interface list | grep sample_interfaces
+```
+
+期待される出力:
+```
+sample_interfaces/action/NavigateWaypoints
+sample_interfaces/msg/RobotStatus
+sample_interfaces/srv/GetRobotStatus
+```
+
+### チェック 3: メッセージ定義を確認する
+
+- [ ] `RobotStatus.msg` の全フィールドが表示されることを確認する
+
+```bash
+ros2 interface show sample_interfaces/msg/RobotStatus
+```
+
+期待される出力:
+```
+std_msgs/Header header
+	builtin_interfaces/Time stamp
+	string frame_id
+string robot_name
+string state
+float64 battery_percentage
+geometry_msgs/Point position
+	float64 x
+	float64 y
+	float64 z
+geometry_msgs/Vector3 linear_velocity
+	float64 x
+	float64 y
+	float64 z
+float64 heading_rad
+```
+
+### チェック 4: サービス定義を確認する
+
+- [ ] `GetRobotStatus.srv` のリクエスト・レスポンス構造が確認できることを確認する
+
+```bash
+ros2 interface show sample_interfaces/srv/GetRobotStatus
+```
+
+期待される出力（`---` でリクエストとレスポンスを区切る）:
+```
+# Request (空)
+---
+sample_interfaces/RobotStatus status
+	std_msgs/Header header
+		...
+bool success
+string message
+```
+
+### チェック 5: アクション定義を確認する
+
+- [ ] `NavigateWaypoints.action` のゴール・結果・フィードバック構造が確認できることを確認する
+
+```bash
+ros2 interface show sample_interfaces/action/NavigateWaypoints
+```
+
+期待される出力（`---` が 2 つでゴール・結果・フィードバックに区切られる）:
+```
+geometry_msgs/PoseStamped[] waypoints
+	...
+bool loop
+float64 tolerance_m
+---
+bool success
+uint32 waypoints_completed
+string message
+---
+uint32 current_index
+uint32 total_waypoints
+float64 distance_to_current
+geometry_msgs/Point current_position
+	...
+```
+
+### チェック 6: Python からのインポート確認
+
+- [ ] Python インタープリタでカスタム型をインポートできることを確認する
+
+```bash
+python3 -c "from sample_interfaces.msg import RobotStatus; print('OK:', RobotStatus())"
+```
+
+期待される出力:
+```
+OK: sample_interfaces.msg.RobotStatus(header=..., robot_name='', state='', ...)
+```
+
+### 完了条件
+
+- `sample_interfaces` パッケージがエラーなくビルドできた
+- `ros2 interface list` に `msg/RobotStatus`、`srv/GetRobotStatus`、`action/NavigateWaypoints` の 3 つが表示されている
+- `ros2 interface show` で各型のフィールド定義が正しく表示された
+- Python から `from sample_interfaces.msg import RobotStatus` がエラーなく実行できた
+
+### トラブルシューティング
+
+**`ros2 interface list` に `sample_interfaces` が表示されない場合**
+
+`source install/setup.bash` を実行していない可能性があります。ビルド後は必ず環境を再読み込みしてください。
+
+```bash
+# ワークスペースのルートで実行する
+source install/setup.bash
+ros2 interface list | grep sample_interfaces
+```
+
+**`colcon build` で `rosidl_generate_interfaces` が見つからないエラーが出る場合**
+
+```bash
+# ROS2 のシステム環境を読み込んでからビルドする
+source /opt/ros/jazzy/setup.bash
+colcon build --packages-select sample_interfaces
+```
+
+**`ImportError: No module named 'sample_interfaces'` が出る場合**
+
+ビルドは成功しているが環境が再読み込みされていない場合があります。
+
+```bash
+source install/setup.bash
+python3 -c "from sample_interfaces.msg import RobotStatus; print('OK')"
+```
+
+**新しいフィールドを追加後に既存ノードでエラーが出る場合**
+
+インターフェースを変更した場合、依存するパッケージも再ビルドが必要です。
+
+```bash
+colcon build --packages-select sample_interfaces
+colcon build --packages-select drone_sim ground_robot_sim
+source install/setup.bash
+```

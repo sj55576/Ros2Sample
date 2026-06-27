@@ -71,6 +71,8 @@ source install/setup.bash
 | 12 | [RViz 可視化](12_rviz_visualization.md) | 45 分 | TF、センサー、マップ、経路の可視化 |
 | 13 | [ROS 2 デバッグ入門](13_debugging_ros2_systems.md) | 45 分 | CLI と rqt_graph による切り分け |
 | 14 | [既存パッケージを読み解く](14_reading_existing_packages.md) | 60 分 | 実装コードの読み方と概念の対応 |
+| 15 | [ミニ課題プロジェクト集](15_mini_projects.md) | 90 分 | 複数概念を組み合わせた実践課題 |
+| 16 | [トラブルシューティング集](16_troubleshooting.md) | — | よくあるエラーと対処法 |
 
 ### 学習全体の見取り図
 
@@ -90,9 +92,11 @@ flowchart LR
     bt --> rviz["12. RViz で見る"]
     rviz --> debug["13. CLI で調べる"]
     debug --> apps["14. 既存パッケージを読む<br/>ground_robot_sim / drone_sim"]
+    apps --> mini["15. ミニ課題で実践"]
+    mini --> trouble["16. トラブルシューティング"]
 ```
 
-前半の 1〜6 は ROS 2 の共通部品を学ぶ段階です。7〜11 は、その部品を自律移動システムに組み合わせる段階です。12〜13 は、動作を目で確認し、問題を CLI で切り分けるための実践編です。14 は、学んだ概念が実際のパッケージでどう使われているかを読み解く総まとめです。途中で詰まった場合は、図の左側に戻って前提概念を確認してください。
+前半の 1〜6 は ROS 2 の共通部品を学ぶ段階です。7〜11 は、その部品を自律移動システムに組み合わせる段階です。12〜13 は、動作を目で確認し、問題を CLI で切り分けるための実践編です。14 は、学んだ概念が実際のパッケージでどう使われているかを読み解く総まとめです。15 はミニ課題で複数の概念を組み合わせて実装力を磨き、16 は開発中に遭遇しやすいエラーの対処法をまとめています。途中で詰まった場合は、図の左側に戻って前提概念を確認してください。
 
 ---
 
@@ -188,6 +192,18 @@ TF、Odometry、LaserScan、OccupancyGrid、Path を RViz 上に表示し、CLI 
 
 - 学習ファイル: `docs/tutorials/14_reading_existing_packages.md`
 - 参照パッケージ: `src/ground_robot_sim/`、`src/drone_sim/`、`src/manipulator_sim/`
+
+### ステップ 15: ミニ課題プロジェクト集（90 分）
+
+チュートリアル 01〜14 で学んだ概念を複数組み合わせて、小さな機能を自力で実装する課題集です。カスタム msg の定義、Service による動作モード切替、TF 付きセンサーの追加、障害物停止ノード、Waypoint 巡回の改造の 5 課題を段階的に取り組みます。
+
+- 学習ファイル: `docs/tutorials/15_mini_projects.md`
+
+### ステップ 16: トラブルシューティング集
+
+ROS 2 開発中によく遭遇するエラーを症状別に整理しています。Package not found、colcon build 失敗、topic が流れない、TF がつながらないなど、初学者がつまずきやすいポイントとその対処法をまとめています。
+
+- 学習ファイル: `docs/tutorials/16_troubleshooting.md`
 
 ---
 

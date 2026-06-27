@@ -289,3 +289,130 @@ ros2 topic echo /odom --once
 ```
 
 `sim_drone.py` のソースコードと照らし合わせながら、各トピックの用途を確認してください。
+
+> 💡 演習のヒントと解答例は [こちら](answers/01_answers.md) を参照してください。
+
+---
+
+## 確認チェックリスト
+
+演習を終えたら、以下のチェックリストで学習内容を確認してください。
+
+### Publisher と Subscriber の動作確認
+
+- [ ] Publisher ノードが正常に起動し、メッセージを送信できることを確認する
+
+```bash
+ros2 run ros2_learning minimal_publisher
+```
+
+期待される出力例:
+
+```
+[INFO] [minimal_publisher]: パブリッシャーを起動しました。送信レート: 1.0 Hz
+[INFO] [minimal_publisher]: 送信: "こんにちは ROS 2! メッセージ番号: 0"
+[INFO] [minimal_publisher]: 送信: "こんにちは ROS 2! メッセージ番号: 1"
+```
+
+- [ ] `/chatter` トピックがトピック一覧に表示されることを確認する（Publisher を起動した状態で別ターミナルで実行）
+
+```bash
+ros2 topic list
+```
+
+期待される出力例（`/chatter` が含まれること）:
+
+```
+/chatter
+/parameter_events
+/rosout
+```
+
+- [ ] `/chatter` トピックのメッセージをリアルタイムで受信できることを確認する
+
+```bash
+ros2 topic echo /chatter
+```
+
+期待される出力例:
+
+```
+data: 'こんにちは ROS 2! メッセージ番号: 5'
+---
+data: 'こんにちは ROS 2! メッセージ番号: 6'
+---
+```
+
+- [ ] メッセージの送信レートが正しいことを確認する（デフォルトは 1.0 Hz）
+
+```bash
+ros2 topic hz /chatter
+```
+
+期待される出力例:
+
+```
+average rate: 1.000
+	min: 1.000s max: 1.001s std dev: 0.00021s window: 10
+```
+
+- [ ] Subscriber ノードが正常にメッセージを受信できることを確認する（Publisher と別ターミナルで起動）
+
+```bash
+ros2 run ros2_learning minimal_subscriber
+```
+
+期待される出力例:
+
+```
+[INFO] [minimal_subscriber]: 受信: "こんにちは ROS 2! メッセージ番号: 3"
+[INFO] [minimal_subscriber]: 受信: "こんにちは ROS 2! メッセージ番号: 4"
+```
+
+- [ ] Launch ファイルで Publisher と Subscriber を同時に起動できることを確認する
+
+```bash
+ros2 launch ros2_learning pubsub_demo.launch.py
+```
+
+- [ ] `publish_rate_hz` パラメータを変更して送信レートが変わることを確認する
+
+```bash
+ros2 run ros2_learning minimal_publisher --ros-args -p publish_rate_hz:=5.0
+# 別ターミナルで
+ros2 topic hz /chatter
+```
+
+期待される出力例:
+
+```
+average rate: 5.000
+	min: 0.199s max: 0.201s std dev: 0.00015s window: 10
+```
+
+### 完了条件
+
+- Publisher が `/chatter` トピックに 1 Hz でメッセージを送信できること
+- Subscriber が `/chatter` トピックのメッセージを受信してログ出力できること
+- `ros2 topic hz /chatter` で送信レートを確認できること
+- `publish_rate_hz` パラメータを変更してレートが変わることを確認できること
+
+### トラブルシューティング
+
+**Publisher を起動しても `/chatter` がトピック一覧に表示されない場合**
+
+`source install/setup.bash` を実行していない可能性があります。ワークスペースをビルドした後は必ずインストール環境を読み込んでください:
+
+```bash
+source install/setup.bash
+```
+
+**Subscriber を起動してもメッセージが届かない場合**
+
+Publisher と Subscriber の両方が同じトピック名（`/chatter`）と同じメッセージ型（`std_msgs/String`）を使っているか確認してください:
+
+```bash
+ros2 topic info /chatter
+```
+
+Publisher と Subscriber の両方が `Publishers count: 1` および `Subscribers count: 1` として表示されていれば正常に接続されています。

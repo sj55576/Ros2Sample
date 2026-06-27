@@ -256,3 +256,167 @@ ros2 run tf2_tools view_frames
 - これらのカスタム実装はどのような状況では十分か？
 - どのような状況で Nav2 のような本格的なナビゲーションスタックが必要になるか？
 - `ground_robot_sim` では実装されていない機能（例: リカバリ動作）を Nav2 はどのように実現しているか？
+
+> 💡 演習のヒントと解答例は [こちら](answers/07_answers.md) を参照してください。
+
+---
+
+## 確認チェックリスト
+
+このチュートリアルを完了したら、以下の項目を順番に確認してください。
+
+### チェック 1: Nav2 のインストール確認
+
+- [ ] Nav2 パッケージがインストールされていることを確認する
+
+```bash
+apt list --installed 2>/dev/null | grep nav2
+```
+
+期待される出力（一部抜粋）:
+```
+ros-jazzy-nav2-bringup/... [installed]
+ros-jazzy-nav2-bt-navigator/... [installed]
+ros-jazzy-nav2-controller/... [installed]
+ros-jazzy-nav2-costmap-2d/... [installed]
+ros-jazzy-nav2-planner/... [installed]
+```
+
+インストールされていない場合は以下を実行します。
+
+```bash
+sudo apt install ros-jazzy-navigation2 ros-jazzy-nav2-bringup
+```
+
+### チェック 2: ground_robot_sim の起動と TF チェーン確認
+
+- [ ] `ground_robot_sim` を起動して TF が配信されていることを確認する
+
+```bash
+ros2 run ground_robot_sim ground_robot_node
+```
+
+別ターミナルで TF ツリーを確認します。
+
+```bash
+ros2 run tf2_tools view_frames
+```
+
+期待される出力: `frames.pdf` に `odom → base_link` のチェーンが表示される。
+
+- [ ] Nav2 が要求する TF フレームを確認する
+
+```bash
+ros2 topic echo /tf --once
+```
+
+`odom → base_link` が配信されていることを確認してください（Nav2 動作には `map → odom` も必要）。
+
+### チェック 3: ground_robot_sim のインターフェース確認
+
+- [ ] `ground_robot_sim` が Nav2 互換のトピックを配信していることを確認する
+
+```bash
+ros2 run ground_robot_sim ground_robot_node &
+ros2 topic list
+```
+
+期待される出力（Nav2 互換トピックを含む）:
+```
+/cmd_vel
+/odom
+/scan
+/robot_status
+/tf
+/tf_static
+```
+
+- [ ] `/odom` と `/scan` が正しいメッセージ型で配信されていることを確認する
+
+```bash
+ros2 topic info /odom
+ros2 topic info /scan
+```
+
+期待される出力:
+```
+/odom  →  nav_msgs/msg/Odometry
+/scan  →  sensor_msgs/msg/LaserScan
+```
+
+### チェック 4: Nav2 のトピック理解確認
+
+- [ ] Nav2 の主要トピックの型と役割を説明できることを自己確認する
+
+以下のコマンドを実行してトピック型を確認します（Nav2 が起動している場合）。
+
+```bash
+ros2 interface show nav_msgs/msg/Path
+ros2 interface show geometry_msgs/msg/Twist
+```
+
+`nav_msgs/Path` の期待される出力（経路のポーズ配列）:
+```
+std_msgs/Header header
+	builtin_interfaces/Time stamp
+	string frame_id
+geometry_msgs/PoseStamped[] poses
+	std_msgs/Header header
+	geometry_msgs/Pose pose
+		geometry_msgs/Point position
+		geometry_msgs/Quaternion orientation
+```
+
+### チェック 5: Nav2 コンポーネントの役割理解確認
+
+- [ ] 演習 1 の各コンポーネント説明に答えられることを確認する
+
+以下の対応表を見ずに答えられるか確認しましょう。
+
+| 説明 | コンポーネント |
+|------|---------------|
+| スタート〜ゴールへの衝突しない経路を計算する | Planner Server |
+| 計画経路に沿って `/cmd_vel` を送信してロボットを動かす | Controller Server |
+| LiDAR データをリアルタイムに反映してコスト値を更新する | Costmap 2D |
+| 経路追従失敗時にロボットをその場で回転させて再試行する | Recovery Server |
+
+### 完了条件
+
+- Nav2 パッケージがインストールされていることを確認した
+- Nav2 の 6 つの主要コンポーネント（BT Navigator・Planner・Controller・Costmap・Recovery・Waypoint Follower）の役割を説明できる
+- `ground_robot_sim` の `odom → base_link` TF が Nav2 の前提条件の一部を満たしていることを理解した
+- カスタム実装（`ground_robot_sim`）と Nav2 の機能対応関係を説明できる
+
+### トラブルシューティング
+
+**`ground_robot_node` 起動時に `ModuleNotFoundError` が出る場合**
+
+パッケージが未ビルドか、環境が読み込まれていない可能性があります。
+
+```bash
+colcon build --packages-select ground_robot_sim
+source install/setup.bash
+ros2 run ground_robot_sim ground_robot_node
+```
+
+**`ros2 run tf2_tools view_frames` で TF が空の場合**
+
+`ground_robot_node` が起動していないか、TF の配信に失敗している可能性があります。
+
+```bash
+# TF が配信されているか確認する
+ros2 topic echo /tf --once
+```
+
+何も表示されない場合は `ground_robot_node` を先に起動してください。
+
+**Nav2 のインストールコマンドで `unable to locate package` が出る場合**
+
+ROS2 の APT リポジトリが設定されていない可能性があります。
+
+```bash
+# ROS2 リポジトリが設定されているか確認する
+cat /etc/apt/sources.list.d/ros2.list
+```
+
+設定されていない場合は [ROS2 インストールガイド](https://docs.ros.org/en/jazzy/Installation.html) に従ってリポジトリを追加してください。

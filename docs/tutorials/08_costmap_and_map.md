@@ -288,3 +288,147 @@ ros2 run nav2_learning simple_map_publisher
 計算式: `col = floor((0.85 - (-1.0)) / 0.1)` = ?、`row = floor((0.55 - (-1.0)) / 0.1)` = ?
 
 `map_utils.py` の `world_to_grid` 関数を呼んで検証してみましょう。
+
+> 💡 演習のヒントと解答例は [こちら](answers/08_answers.md) を参照してください。
+
+---
+
+## 確認チェックリスト
+
+このチュートリアルを完了したら、以下の項目を順番に確認してください。
+
+### チェック 1: simple_map_publisher が起動できる
+
+```bash
+ros2 run nav2_learning simple_map_publisher
+```
+
+期待される出力（別ターミナルで確認）:
+
+```bash
+ros2 topic list
+# /map が表示されることを確認
+```
+
+```
+/map
+/parameter_events
+/rosout
+```
+
+- [ ] `/map` トピックがリストに表示される
+
+### チェック 2: OccupancyGrid のデータ構造を確認できる
+
+```bash
+ros2 topic echo /map --once
+```
+
+期待される出力（抜粋）:
+
+```yaml
+header:
+  frame_id: map
+info:
+  resolution: 0.1
+  width: 20
+  height: 20
+  origin:
+    position:
+      x: -1.0
+      y: -1.0
+data:
+- 0
+- 0
+- 100
+- 0
+...
+```
+
+- [ ] `resolution`、`width`、`height` の値が確認できる
+- [ ] `data` 配列に `0`（空き）と `100`（障害物）が含まれている
+
+### チェック 3: メッセージ型の定義を確認できる
+
+```bash
+ros2 interface show nav_msgs/msg/OccupancyGrid
+```
+
+期待される出力（抜粋）:
+
+```
+std_msgs/Header header
+nav_msgs/MapMetaData info
+  float32 resolution
+  uint32 width
+  uint32 height
+  geometry_msgs/Pose origin
+int8[] data
+```
+
+- [ ] `header`、`info`、`data` の 3 フィールドが確認できる
+
+### チェック 4: costmap_monitor が起動できる
+
+```bash
+# simple_map_publisher が起動している状態で
+ros2 run nav2_learning costmap_monitor
+```
+
+```bash
+ros2 topic list
+# /costmap が表示されることを確認
+```
+
+- [ ] `/costmap` トピックがリストに表示される
+- [ ] コストマップデータに `0`〜`100` の中間値が含まれている（インフレーション領域）
+
+### チェック 5: RViz でマップが表示できる
+
+```bash
+# ターミナル 1
+ros2 run nav2_learning simple_map_publisher
+
+# ターミナル 2
+rviz2
+```
+
+RViz の設定:
+1. 「Add」→「By topic」→「/map」→「Map」を追加
+2. 「Fixed Frame」を `map` に設定
+
+- [ ] 障害物セル（値 `100`）が黒または濃灰色で表示される
+- [ ] 空きセル（値 `0`）が白または薄灰色で表示される
+
+### 完了条件
+
+上記チェックがすべて完了したら、このチュートリアルの学習目標を達成しています:
+
+- [ ] `nav_msgs/OccupancyGrid` のデータ構造（header / info / data）を説明できる
+- [ ] `data` 配列の `0`・`100`・`-1` の意味を説明できる
+- [ ] ワールド座標とグリッドインデックスの変換式を書ける
+- [ ] 静的マップとコストマップの違いを説明できる
+
+### トラブルシューティング
+
+**`ros2 run nav2_learning simple_map_publisher` が失敗する場合**
+
+```bash
+# パッケージがビルドされているか確認
+colcon build --packages-select nav2_learning
+source install/setup.bash
+```
+
+**`/map` トピックが見つからない場合**
+
+```bash
+# ノードが起動しているか確認
+ros2 node list
+# /simple_map_publisher が表示されるはず
+```
+
+**RViz にマップが表示されない場合**
+
+- Fixed Frame が `map` になっているか確認する
+- 「Add」→「By topic」で `/map` を選ぶ（「By display type」では手動で Frame を設定する必要がある）
+- `ros2 topic hz /map` でトピックが配信されているか確認する

@@ -316,3 +316,157 @@ if distance_to_goal < goal_tolerance:
 ```
 
 `goal_tolerance` パラメータを追加して、外部から調整できるようにしてみましょう。
+
+> 💡 演習のヒントと解答例は [こちら](answers/10_answers.md) を参照してください。
+
+---
+
+## 確認チェックリスト
+
+このチュートリアルを完了したら、以下の項目を順番に確認してください。
+
+### チェック 1: simple_path_follower が起動できる
+
+```bash
+# ターミナル 1: マップパブリッシャー
+ros2 run nav2_learning simple_map_publisher
+
+# ターミナル 2: 経路計画ノード
+ros2 run nav2_learning simple_path_planner
+
+# ターミナル 3: 経路追従ノード
+ros2 run nav2_learning simple_path_follower
+```
+
+```bash
+# ノードが起動しているか確認
+ros2 node list
+```
+
+期待される出力:
+
+```
+/simple_map_publisher
+/simple_path_planner
+/simple_path_follower
+```
+
+- [ ] `/simple_path_follower` ノードがリストに表示される
+
+### チェック 2: 経路計画後に /cmd_vel が配信される
+
+```bash
+# ターミナル 4: cmd_vel を監視
+ros2 topic echo /cmd_vel &
+
+# ターミナル 5: 経路を計画
+ros2 service call /plan_path nav2_learning/srv/PlanPath \
+  "{start: {x: 0.0, y: 0.0}, goal: {x: 0.8, y: 0.8}}"
+```
+
+期待される出力（`/cmd_vel`）:
+
+```yaml
+linear:
+  x: 0.2
+  y: 0.0
+  z: 0.0
+angular:
+  x: 0.0
+  y: 0.0
+  z: 0.15
+```
+
+- [ ] `/cmd_vel` に `linear.x > 0.0`（前進）が配信される
+- [ ] 曲率に応じて `angular.z` が変化する
+
+### チェック 3: lookahead_distance を変えて挙動の違いを確認できる
+
+```bash
+# 小さい lookahead（振動しやすい）
+ros2 param set /simple_path_follower lookahead_distance 0.1
+
+# 大きい lookahead（滑らか、コーナーでショートカット）
+ros2 param set /simple_path_follower lookahead_distance 0.5
+```
+
+```bash
+# パラメータが反映されたか確認
+ros2 param get /simple_path_follower lookahead_distance
+```
+
+- [ ] `lookahead_distance = 0.1` のとき `angular.z` の変動が大きい（振動傾向）
+- [ ] `lookahead_distance = 0.5` のとき `angular.z` の変動が小さい（滑らか）
+
+### チェック 4: /cmd_vel トピックの配信周波数を確認できる
+
+```bash
+ros2 topic hz /cmd_vel
+```
+
+期待される出力:
+
+```
+average rate: 10.000
+  min: 0.099s max: 0.101s std dev: 0.00100s window: 100
+```
+
+- [ ] 約 10 Hz（制御周期 0.1 秒）で配信されている
+
+### チェック 5: linear_velocity パラメータを変更できる
+
+```bash
+# 速度を落とす
+ros2 param set /simple_path_follower linear_velocity 0.1
+
+# 速度を上げる
+ros2 param set /simple_path_follower linear_velocity 0.4
+```
+
+```bash
+# /cmd_vel の linear.x が変わったか確認
+ros2 topic echo /cmd_vel --once
+```
+
+- [ ] `linear_velocity = 0.1` のとき `linear.x ≈ 0.1` になる
+- [ ] `linear_velocity = 0.4` のとき `linear.x ≈ 0.4` になる
+
+### 完了条件
+
+上記チェックがすべて完了したら、このチュートリアルの学習目標を達成しています:
+
+- [ ] Pure Pursuit の「ルックアヘッドポイント」の概念を説明できる
+- [ ] 曲率 `kappa = 2*sin(alpha)/lookahead_distance` の意味を説明できる
+- [ ] `lookahead_distance` が小さすぎると振動し、大きすぎるとショートカットする理由を説明できる
+- [ ] `simple_path_follower` を起動して `/cmd_vel` の出力を確認できる
+
+### トラブルシューティング
+
+**`/cmd_vel` が配信されない場合**
+
+```bash
+# /plan トピックにデータが来ているか確認
+ros2 topic echo /plan --once
+
+# simple_path_follower が /plan を受信しているか確認
+ros2 topic info /plan
+# → Subscription count が 1 以上であることを確認
+```
+
+**`angular.z` が常に 0 の場合**
+
+経路が直線で、ルックアヘッドポイントがロボットの正面方向にある場合は正常です。スタートとゴールを斜め方向に設定してみてください:
+
+```bash
+ros2 service call /plan_path nav2_learning/srv/PlanPath \
+  "{start: {x: 0.0, y: 0.0}, goal: {x: 0.5, y: 0.8}}"
+```
+
+**経路計画後すぐに停止してしまう場合**
+
+`simple_path_follower` のゴール到達判定が即座に成立している可能性があります。スタート座標とゴール座標が十分に離れているか確認してください。また `goal_tolerance` パラメータが正しく設定されているか確認してください:
+
+```bash
+ros2 param list /simple_path_follower
+ros2 param get /simple_path_follower goal_tolerance
+```

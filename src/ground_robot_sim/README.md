@@ -55,6 +55,19 @@ Run three robots in separate namespaces. Topics are under `/robot1`, `/robot2`, 
 ros2 launch ground_robot_sim multi_robot.launch.py
 ```
 
+Run the optional GZ Sim integration demo. This starts GZ Sim, spawns the URDF model, bridges `/cmd_vel`, `/odom`, `/tf`, and `/joint_states`, and runs the patrol controller:
+
+```bash
+ros2 launch ground_robot_sim gazebo.launch.py use_gui:=false
+```
+
+For manual command testing, disable the patrol controller:
+
+```bash
+ros2 launch ground_robot_sim gazebo.launch.py use_gui:=true start_controller:=false
+ros2 topic pub /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.3}, angular: {z: 0.4}}" --rate 10
+```
+
 Inspect topics:
 
 ```bash
@@ -96,4 +109,4 @@ ros2 topic pub /robot1/cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.2}, angul
 - `turn_speed`: 回避時の旋回角速度（rad/s）。デフォルト `0.8`。
 - `front_angle_degrees`: 前方センサー扇形の全角（度）。デフォルト `70.0`。
 
-The code intentionally avoids physics engine and Gazebo dependencies so it can run quickly in teaching, CI, and container environments.
+Most samples intentionally avoid physics engine dependencies so they can run quickly in teaching, CI, and container environments. The `gazebo.launch.py` demo is an optional GZ Sim path for learning URDF/SDF, Gazebo plugins, and `ros_gz_bridge`.

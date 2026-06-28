@@ -73,6 +73,7 @@ source install/setup.bash
 | 14 | [既存パッケージを読み解く](14_reading_existing_packages.md) | 60 分 | 実装コードの読み方と概念の対応 |
 | 15 | [ミニ課題プロジェクト集](15_mini_projects.md) | 90 分 | 複数概念を組み合わせた実践課題 |
 | 16 | [トラブルシューティング集](16_troubleshooting.md) | — | よくあるエラーと対処法 |
+| 17 | [Gazebo / GZ Sim 連携入門](17_gazebo_integration.md) | 60 分 | GZ Sim、URDF/SDF、ros_gz_bridge の接続 |
 
 ### 学習全体の見取り図
 
@@ -94,9 +95,10 @@ flowchart LR
     debug --> apps["14. 既存パッケージを読む<br/>ground_robot_sim / drone_sim"]
     apps --> mini["15. ミニ課題で実践"]
     mini --> trouble["16. トラブルシューティング"]
+    trouble --> gz["17. GZ Sim とつなぐ"]
 ```
 
-前半の 1〜6 は ROS 2 の共通部品を学ぶ段階です。7〜11 は、その部品を自律移動システムに組み合わせる段階です。12〜13 は、動作を目で確認し、問題を CLI で切り分けるための実践編です。14 は、学んだ概念が実際のパッケージでどう使われているかを読み解く総まとめです。15 はミニ課題で複数の概念を組み合わせて実装力を磨き、16 は開発中に遭遇しやすいエラーの対処法をまとめています。途中で詰まった場合は、図の左側に戻って前提概念を確認してください。
+前半の 1〜6 は ROS 2 の共通部品を学ぶ段階です。7〜11 は、その部品を自律移動システムに組み合わせる段階です。12〜13 は、動作を目で確認し、問題を CLI で切り分けるための実践編です。14 は、学んだ概念が実際のパッケージでどう使われているかを読み解く総まとめです。15 はミニ課題で複数の概念を組み合わせて実装力を磨き、16 は開発中に遭遇しやすいエラーの対処法をまとめています。17 は軽量 Python シミュレーションから GZ Sim へ進む発展編です。途中で詰まった場合は、図の左側に戻って前提概念を確認してください。
 
 ---
 
@@ -204,6 +206,15 @@ TF、Odometry、LaserScan、OccupancyGrid、Path を RViz 上に表示し、CLI 
 ROS 2 開発中によく遭遇するエラーを症状別に整理しています。Package not found、colcon build 失敗、topic が流れない、TF がつながらないなど、初学者がつまずきやすいポイントとその対処法をまとめています。
 
 - 学習ファイル: `docs/tutorials/16_troubleshooting.md`
+
+### ステップ 17: Gazebo / GZ Sim 連携入門（60 分）
+
+`ground_robot_sim` の GZ 用 URDF / SDF / launch ファイルを使い、GZ Sim 上に差動二輪ロボットを spawn します。`ros_gz_bridge` で `/cmd_vel`、`/odom`、`/tf`、`/joint_states` を接続し、軽量シミュレーションから物理シミュレーションへ進むための基本構成を学びます。
+
+- 学習ファイル: `docs/tutorials/17_gazebo_integration.md`
+- 参照ファイル: `src/ground_robot_sim/launch/gazebo.launch.py`
+- 参照ファイル: `src/ground_robot_sim/urdf/ground_robot_gazebo.urdf`
+- 参照ファイル: `src/ground_robot_sim/worlds/default.sdf`
 
 ---
 

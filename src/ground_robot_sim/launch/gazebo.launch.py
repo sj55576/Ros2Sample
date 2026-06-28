@@ -5,6 +5,7 @@ import os
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription, SetEnvironmentVariable
+from launch.conditions import IfCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, PythonExpression
 from launch_ros.actions import Node
@@ -21,6 +22,8 @@ def generate_launch_description():
         robot_description = f.read()
 
     use_gui = LaunchConfiguration('use_gui')
+    gz_version = LaunchConfiguration('gz_version')
+    start_controller = LaunchConfiguration('start_controller')
 
     return LaunchDescription([
         # Software rendering for WSL2 (no GPU passthrough)
@@ -31,6 +34,16 @@ def generate_launch_description():
             'use_gui',
             default_value='false',
             description='Launch Gazebo GUI (false for headless / WSL2)',
+        ),
+        DeclareLaunchArgument(
+            'gz_version',
+            default_value='8',
+            description='Gazebo Sim major version passed to ros_gz_sim',
+        ),
+        DeclareLaunchArgument(
+            'start_controller',
+            default_value='true',
+            description='Start the diff_drive_patrol demo controller',
         ),
 
         # Gazebo Sim server-only (-s) for WSL2: no GUI, no rendering required
@@ -44,7 +57,7 @@ def generate_launch_description():
                     ' if "false" == "', use_gui, '"'
                     ' else "-r ' + world + '"'
                 ]),
-                'gz_version': '8',
+                'gz_version': gz_version,
             }.items(),
         ),
 
@@ -91,5 +104,6 @@ def generate_launch_description():
             executable='diff_drive_patrol',
             name='diff_drive_patrol',
             output='screen',
+            condition=IfCondition(start_controller),
         ),
     ])

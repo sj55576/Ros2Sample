@@ -1,8 +1,11 @@
 """A tiny altitude-hold controller that commands vertical velocity."""
 
+import math
+
 import rclpy
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
+from rcl_interfaces.msg import SetParametersResult
 from rclpy.node import Node
 
 from drone_sim.pid import PIDController
@@ -40,7 +43,56 @@ class AltitudeHold(Node):
         self.cmd_pub = self.create_publisher(Twist, 'cmd_vel', 10)
         self.create_subscription(Odometry, 'odom', self._on_odom, 10)
         self.create_timer(self._dt, self._publish_command)
+
+        self.add_on_set_parameters_callback(self._on_param_change)
+
         self.get_logger().info(f'Holding altitude at {self.target_altitude_m:.2f} m')
+
+    def _on_param_change(self, params: list) -> SetParametersResult:
+        """Validate and apply dynamic parameter changes."""
+        for param in params:
+            if param.name in ('kp', 'ki', 'kd'):
+                val = float(param.value)
+                if not math.isfinite(val) or val < 0.0:
+                    return SetParametersResult(
+                        successful=False,
+                        reason=f'{param.name} must be finite and >= 0.0',
+                    )
+            elif param.name == 'target_altitude_m':
+                val = float(param.value)
+                if not math.isfinite(val) or val < 0.0:
+                    return SetParametersResult(
+                        successful=False,
+                        reason='target_altitude_m must be finite and >= 0.0',
+                    )
+
+        gains_changed = False
+        for param in params:
+            if param.name == 'kp':
+                self.pid.kp = float(param.value)
+                gains_changed = True
+                self.get_logger().info(f'kp updated to {self.pid.kp:.3f}')
+            elif param.name == 'ki':
+                self.pid.ki = float(param.value)
+                gains_changed = True
+                self.get_logger().info(f'ki updated to {self.pid.ki:.3f}')
+            elif param.name == 'kd':
+                self.pid.kd = float(param.value)
+                gains_changed = True
+                self.get_logger().info(f'kd updated to {self.pid.kd:.3f}')
+            elif param.name == 'target_altitude_m':
+                self.target_altitude_m = float(param.value)
+                self.get_logger().info(
+                    f'target_altitude_m updated to {self.target_altitude_m:.3f}'
+                )
+
+        if gains_changed:
+            self.pid.reset()
+            self.get_logger().info(
+                'PID gains changed; resetting controller integral/derivative state'
+            )
+
+        return SetParametersResult(successful=True)
 
     def _on_odom(self, msg: Odometry) -> None:
         self.current_altitude_m = msg.pose.pose.position.z

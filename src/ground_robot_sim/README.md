@@ -83,6 +83,34 @@ ros2 topic echo /robot1/odom
 ros2 topic pub /robot1/cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.2}, angular: {z: 0.3}}"
 ```
 
+### Keyboard teleop
+
+Drive a robot (or a drone) interactively from the terminal:
+
+```bash
+ros2 run ground_robot_sim teleop_keyboard
+```
+
+| Key | Action |
+| --- | --- |
+| `w` / `s` | drive forward / backward |
+| `a` / `d` | turn left / right |
+| `r` / `f` | climb / descend (`linear.z`, useful for drones) |
+| `q` / `z` | increase / decrease speed scale |
+| `space` | stop immediately |
+
+The node also stops automatically (`key_timeout_sec`, default `0.5`) if no key is
+pressed for a while, so a dropped terminal or a stuck key never leaves the robot
+running unattended.
+
+`teleop_keyboard` publishes plain `cmd_vel`, so remap it to drive a specific robot
+or drone in a multi-robot demo:
+
+```bash
+ros2 run ground_robot_sim teleop_keyboard --ros-args -r cmd_vel:=/drone_1/cmd_vel
+ros2 run ground_robot_sim teleop_keyboard --ros-args -r cmd_vel:=/robot_1/cmd_vel
+```
+
 ## Useful parameters
 
 - `initial_x`, `initial_y`, `initial_yaw`: starting pose in the square world.
@@ -108,5 +136,24 @@ ros2 topic pub /robot1/cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.2}, angul
 - `stop_distance`: この距離以下で完全停止し回転する距離（メートル）。デフォルト `0.45`。
 - `turn_speed`: 回避時の旋回角速度（rad/s）。デフォルト `0.8`。
 - `front_angle_degrees`: 前方センサー扇形の全角（度）。デフォルト `70.0`。
+
+## Dynamic parameters
+
+`waypoint_follower` and `lidar_obstacle_avoid` support runtime parameter updates via
+`add_on_set_parameters_callback`, so gains and thresholds can be tuned while the demo runs.
+
+- `waypoint_follower`: `kp_linear` / `ki_linear` / `kd_linear`, `kp_angular` / `ki_angular` /
+  `kd_angular` (finite, `>= 0.0`) and `tolerance_m` (finite, `> 0.0`). Changing any gain resets
+  that axis's PID integral/derivative state so the controller doesn't jump on the next tick.
+- `lidar_obstacle_avoid`: `stop_distance` and `avoid_distance` (finite, `> 0.0`).
+  `stop_distance` must always remain strictly less than `avoid_distance`; an update that would
+  violate this is rejected and the previous values are kept.
+
+```bash
+ros2 param set /waypoint_follower kp_linear 1.0
+ros2 param set /waypoint_follower tolerance_m 0.1
+ros2 param set /lidar_obstacle_avoid stop_distance 0.6
+ros2 param set /lidar_obstacle_avoid avoid_distance 1.5
+```
 
 Most samples intentionally avoid physics engine dependencies so they can run quickly in teaching, CI, and container environments. The `gazebo.launch.py` demo is an optional GZ Sim path for learning URDF/SDF, Gazebo plugins, and `ros_gz_bridge`.

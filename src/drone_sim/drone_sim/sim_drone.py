@@ -1,11 +1,12 @@
 """A dependency-light kinematic quadrotor simulator node."""
 
-from math import atan2, hypot
+from math import atan2, hypot, isfinite
 from typing import Optional
 
 import rclpy
 from geometry_msgs.msg import PoseStamped, TransformStamped, Twist, Vector3
 from nav_msgs.msg import Odometry
+from rcl_interfaces.msg import SetParametersResult
 from rclpy.node import Node
 from sample_interfaces.msg import RobotStatus
 from sample_interfaces.srv import GetRobotStatus
@@ -14,6 +15,16 @@ from std_msgs.msg import Bool
 from tf2_ros import TransformBroadcaster
 
 from drone_sim.math_utils import clamp, normalize_angle, quat_from_euler
+
+_POSITIVE_PARAMS = (
+    'max_linear_speed',
+    'max_yaw_rate',
+    'linear_accel_limit',
+    'yaw_accel_limit',
+    'cmd_timeout_sec',
+    'setpoint_timeout_sec',
+)
+_NONNEGATIVE_PARAMS = ('position_kp', 'yaw_kp')
 
 
 class SimDrone(Node):
@@ -93,9 +104,39 @@ class SimDrone(Node):
 
         period = 1.0 / max(self.publish_rate_hz, 1.0)
         self.create_timer(period, self._step)
+
+        self.add_on_set_parameters_callback(self._on_param_change)
+
         self.get_logger().info(
             f'Simulating {self.get_fully_qualified_name()} in frame {self.frame_id}'
         )
+
+    def _on_param_change(self, params: list) -> SetParametersResult:
+        """Validate and apply dynamic parameter changes."""
+        for param in params:
+            if param.name in _POSITIVE_PARAMS:
+                val = float(param.value)
+                if not isfinite(val) or val <= 0.0:
+                    return SetParametersResult(
+                        successful=False,
+                        reason=f'{param.name} must be finite and > 0.0',
+                    )
+            elif param.name in _NONNEGATIVE_PARAMS:
+                val = float(param.value)
+                if not isfinite(val) or val < 0.0:
+                    return SetParametersResult(
+                        successful=False,
+                        reason=f'{param.name} must be finite and >= 0.0',
+                    )
+
+        for param in params:
+            if param.name in _POSITIVE_PARAMS or param.name in _NONNEGATIVE_PARAMS:
+                setattr(self, param.name, float(param.value))
+                self.get_logger().info(
+                    f'{param.name} updated to {getattr(self, param.name):.3f}'
+                )
+
+        return SetParametersResult(successful=True)
 
     def _on_cmd_vel(self, msg: Twist) -> None:
         self.cmd_vel = msg

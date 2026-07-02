@@ -9,6 +9,7 @@ from geometry_msgs.msg import Twist
 from ground_robot_sim.geometry import normalize_angle
 from ground_robot_sim.pid import PIDController
 from nav_msgs.msg import Odometry
+from rcl_interfaces.msg import SetParametersResult
 from rclpy.node import Node
 
 
@@ -33,6 +34,17 @@ def parse_waypoints_xy(raw: List[float]) -> List[Tuple[float, float]]:
 
 class WaypointFollower(Node):
     """Drive a diff-drive robot through a series of (x, y) waypoints via closed-loop control."""
+
+    # Maps a dynamic gain parameter name to the PID controller attribute it
+    # feeds and a human-readable label for logging.
+    _GAIN_PARAMS = {
+        'kp_linear': ('_linear_pid', 'kp', 'linear'),
+        'ki_linear': ('_linear_pid', 'ki', 'linear'),
+        'kd_linear': ('_linear_pid', 'kd', 'linear'),
+        'kp_angular': ('_angular_pid', 'kp', 'angular'),
+        'ki_angular': ('_angular_pid', 'ki', 'angular'),
+        'kd_angular': ('_angular_pid', 'kd', 'angular'),
+    }
 
     def __init__(self) -> None:
         super().__init__('waypoint_follower')
@@ -63,6 +75,7 @@ class WaypointFollower(Node):
         self.yaw: float = 0.0
         self.arrival_time = None
         self._completed_logged: bool = False
+        self.tolerance_m = float(self.get_parameter('tolerance_m').value)
 
         kp_linear = float(self.get_parameter('kp_linear').value)
         ki_linear = float(self.get_parameter('ki_linear').value)
@@ -86,10 +99,53 @@ class WaypointFollower(Node):
         rate = max(1.0, float(self.get_parameter('publish_rate').value))
         self._dt = 1.0 / rate
         self.create_timer(self._dt, self.tick)
+
+        self.add_on_set_parameters_callback(self._on_param_change)
+
         self.get_logger().info(
             f'Loaded {len(self.waypoints)} waypoint(s); '
             f'starting at waypoint 0: {self.waypoints[0]}'
         )
+
+    def _on_param_change(
+        self, params: list,
+    ) -> SetParametersResult:
+        """Validate and apply dynamic parameter changes."""
+        for param in params:
+            if param.name in self._GAIN_PARAMS:
+                val = float(param.value)
+                if not math.isfinite(val) or val < 0.0:
+                    return SetParametersResult(
+                        successful=False,
+                        reason=f'{param.name} must be a finite value >= 0.0',
+                    )
+            elif param.name == 'tolerance_m':
+                val = float(param.value)
+                if not math.isfinite(val) or val <= 0.0:
+                    return SetParametersResult(
+                        successful=False,
+                        reason='tolerance_m must be a finite value > 0.0',
+                    )
+
+        for param in params:
+            if param.name in self._GAIN_PARAMS:
+                controller_attr, gain_attr, label = self._GAIN_PARAMS[
+                    param.name
+                ]
+                controller = getattr(self, controller_attr)
+                setattr(controller, gain_attr, float(param.value))
+                controller.reset()
+                self.get_logger().info(
+                    f'{param.name} updated to {float(param.value):.3f} '
+                    f'and {label} PID controller reset'
+                )
+            elif param.name == 'tolerance_m':
+                self.tolerance_m = float(param.value)
+                self.get_logger().info(
+                    f'tolerance_m updated to {self.tolerance_m:.3f}'
+                )
+
+        return SetParametersResult(successful=True)
 
     def _odom_callback(self, msg: Odometry) -> None:
         """Update the cached pose from an odometry message."""
@@ -102,7 +158,7 @@ class WaypointFollower(Node):
         """Compute and publish the next cmd_vel based on the current pose."""
         command = Twist()
 
-        tolerance_m = float(self.get_parameter('tolerance_m').value)
+        tolerance_m = self.tolerance_m
         hold_time_sec = float(self.get_parameter('hold_time_sec').value)
         loop = bool(self.get_parameter('loop').value)
         heading_gate = float(self.get_parameter('heading_gate_rad').value)

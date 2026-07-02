@@ -76,6 +76,33 @@ critical-battery signal makes it land in place from any airborne state. The curr
 published on `/mission_state`. The pure transition rules are implemented in
 `drone_sim/mission_logic.py` and covered by pytest unit tests, independent of ROS.
 
+## Dynamic parameters
+
+`altitude_hold`, `sim_drone`, and `geofence_monitor` support runtime parameter updates via
+`add_on_set_parameters_callback`; changes take effect on the next control/publish cycle
+without restarting the node.
+
+- `altitude_hold`: `kp`, `ki`, `kd`, and `target_altitude_m` can be changed live. Gains must be
+  finite and `>= 0.0`; `target_altitude_m` must be finite and `>= 0.0`. Changing any of `kp`,
+  `ki`, or `kd` resets the PID controller's accumulated integral and derivative state so the
+  new gains don't act on stale error history.
+- `sim_drone`: `max_linear_speed`, `max_yaw_rate`, `linear_accel_limit`, and
+  `yaw_accel_limit` must be finite and `> 0.0`; `position_kp` and `yaw_kp` must be finite and
+  `>= 0.0`; `cmd_timeout_sec` and `setpoint_timeout_sec` must be finite and `> 0.0`.
+- `geofence_monitor`: `boundary_min_x`/`boundary_max_x`, `boundary_min_y`/`boundary_max_y`,
+  `boundary_min_z`/`boundary_max_z`, and `margin_m` can be changed live. Boundaries are
+  validated together, so the resulting `min < max` must hold on every axis, and `margin_m`
+  must be finite and `>= 0.0`.
+
+```bash
+ros2 param set /altitude_hold kp 2.5
+ros2 param set /sim_drone max_linear_speed 2.0
+ros2 param set /geofence_monitor boundary_max_x 10.0
+```
+
+Invalid values (negative gains, non-finite numbers, or boundary changes that would make
+`min >= max` on any axis) are rejected and the previous value is kept.
+
 ## Useful topics
 
 ```bash

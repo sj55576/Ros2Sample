@@ -1,14 +1,28 @@
 """Geofence monitor that constrains drone flight to a configurable bounding box."""
 
+from math import isfinite
 from typing import Optional
 
 import rclpy
 from geometry_msgs.msg import PoseStamped
 from nav_msgs.msg import Odometry
+from rcl_interfaces.msg import SetParametersResult
 from rclpy.node import Node
 from std_msgs.msg import Bool
 
 from drone_sim.geofence_utils import check_boundary
+
+# Maps a boundary parameter name to (bound side, axis index into the
+# 3-tuples used for _bounds_min / _bounds_max).
+_BOUNDARY_PARAMS = {
+    'boundary_min_x': ('min', 0),
+    'boundary_max_x': ('max', 0),
+    'boundary_min_y': ('min', 1),
+    'boundary_max_y': ('max', 1),
+    'boundary_min_z': ('min', 2),
+    'boundary_max_z': ('max', 2),
+}
+_AXIS_NAMES = ('x', 'y', 'z')
 
 
 class GeofenceMonitor(Node):
@@ -52,12 +66,64 @@ class GeofenceMonitor(Node):
         period = 1.0 / max(publish_rate_hz, 0.1)
         self.create_timer(period, self._tick)
 
+        self.add_on_set_parameters_callback(self._on_param_change)
+
         self.get_logger().info(
             f'GeofenceMonitor started: x=[{self._bounds_min[0]}, {self._bounds_max[0]}], '
             f'y=[{self._bounds_min[1]}, {self._bounds_max[1]}], '
             f'z=[{self._bounds_min[2]}, {self._bounds_max[2]}], '
             f'margin={self._margin} m'
         )
+
+    def _on_param_change(self, params: list) -> SetParametersResult:
+        """Validate and apply dynamic geofence parameter changes."""
+        new_min = list(self._bounds_min)
+        new_max = list(self._bounds_max)
+        new_margin = self._margin
+
+        for param in params:
+            if param.name in _BOUNDARY_PARAMS:
+                val = float(param.value)
+                if not isfinite(val):
+                    return SetParametersResult(
+                        successful=False,
+                        reason=f'{param.name} must be finite',
+                    )
+                side, idx = _BOUNDARY_PARAMS[param.name]
+                if side == 'min':
+                    new_min[idx] = val
+                else:
+                    new_max[idx] = val
+            elif param.name == 'margin_m':
+                val = float(param.value)
+                if not isfinite(val) or val < 0.0:
+                    return SetParametersResult(
+                        successful=False,
+                        reason='margin_m must be finite and >= 0.0',
+                    )
+                new_margin = val
+
+        for idx, axis in enumerate(_AXIS_NAMES):
+            if not new_min[idx] < new_max[idx]:
+                return SetParametersResult(
+                    successful=False,
+                    reason=(
+                        f'boundary_min_{axis} must be less than '
+                        f'boundary_max_{axis}'
+                    ),
+                )
+
+        self._bounds_min = (new_min[0], new_min[1], new_min[2])
+        self._bounds_max = (new_max[0], new_max[1], new_max[2])
+        self._margin = new_margin
+
+        for param in params:
+            if param.name in _BOUNDARY_PARAMS or param.name == 'margin_m':
+                self.get_logger().info(
+                    f'{param.name} updated to {float(param.value):.3f}'
+                )
+
+        return SetParametersResult(successful=True)
 
     def _on_odom(self, msg: Odometry) -> None:
         self._current_x = msg.pose.pose.position.x

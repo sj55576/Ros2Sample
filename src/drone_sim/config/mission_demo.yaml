@@ -1,0 +1,38 @@
+sim_drone:
+  ros__parameters:
+    publish_rate_hz: 50.0
+    max_linear_speed: 3.0
+
+mission_state_machine:
+  ros__parameters:
+    waypoints: [2.0, 0.0, 1.5, 2.0, 2.0, 1.5, 0.0, 2.0, 1.5]
+    takeoff_altitude_m: 1.5
+    tolerance_m: 0.25
+    hold_time_sec: 1.0
+    rtl_battery_pct: 30.0
+    rtl_altitude_m: 1.5
+    auto_start: false
+    publish_rate_hz: 10.0
+
+battery_monitor:
+  ros__parameters:
+    capacity_wh: 5.0
+    idle_power_w: 5.0
+    motor_power_w: 80.0
+    critical_pct: 15.0
+    publish_rate_hz: 2.0
+
+emergency_land:
+  ros__parameters:
+    descent_speed: 0.5
+    publish_rate_hz: 20.0
+
+geofence_monitor:
+  ros__parameters:
+    boundary_min_x: -5.0
+    boundary_max_x: 8.0
+    boundary_min_y: -5.0
+    boundary_max_y: 8.0
+    boundary_min_z: 0.0
+    boundary_max_z: 5.0
+    margin_m: 0.5

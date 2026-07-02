@@ -55,6 +55,27 @@ ros2 launch drone_sim swarm.launch.py drone_count:=3 spacing_m:=2.0 altitude_m:=
 
 Each drone runs under `/drone_N` with its own `odom`, `pose`, `imu`, `cmd_vel`, and `setpoint_pose` topics. TF child frames are named `drone_N/base_link` to avoid frame collisions.
 
+### Mission state machine demo
+
+```bash
+ros2 launch drone_sim mission_demo.launch.py
+ros2 service call /start_mission std_srvs/srv/Trigger
+ros2 topic echo /mission_state
+ros2 service call /return_to_launch std_srvs/srv/Trigger
+ros2 service call /abort_mission std_srvs/srv/Trigger
+```
+
+This starts `sim_drone`, `mission_state_machine`, `battery_monitor`, `emergency_land`, and
+`geofence_monitor`. `mission_state_machine` walks the drone through
+`IDLE -> TAKEOFF -> MISSION -> RTL -> LAND -> LANDED`: it stays in `IDLE` until
+`/start_mission` is called (or `auto_start` is set), climbs to `takeoff_altitude_m`, then
+cycles through the configured `waypoints`. It automatically switches to `RTL` once all
+waypoints are visited or the battery drops to `rtl_battery_pct`, and returns home before
+landing. Calling `/return_to_launch` requests an early RTL, while `/abort_mission` or a
+critical-battery signal makes it land in place from any airborne state. The current state is
+published on `/mission_state`. The pure transition rules are implemented in
+`drone_sim/mission_logic.py` and covered by pytest unit tests, independent of ROS.
+
 ## Useful topics
 
 ```bash
@@ -78,6 +99,9 @@ For a swarm drone, prefix topics with the namespace, for example `/drone_1/cmd_v
 - `drone_sim/formation_controller.py` - leader-follower setpoint generator.
 - `drone_sim/telemetry_logger.py` - flight statistics logger and summary publisher.
 - `drone_sim/battery_monitor.py` and `drone_sim/emergency_land.py` - battery drain and landing helpers.
-- `launch/*.launch.py` - single drone, altitude hold, battery, wind/geofence/telemetry, formation, and swarm launch files.
+- `drone_sim/mission_logic.py` and `drone_sim/mission_state_machine.py` - pure mission
+  transition rules and the ROS node that drives takeoff/mission/RTL/land.
+- `launch/*.launch.py` - single drone, altitude hold, battery, mission, wind/geofence/telemetry,
+  formation, and swarm launch files.
 - `config/*.yaml` - sample parameters.
 - `urdf/quadrotor.urdf` and `rviz/drone_sim.rviz` - visualization helpers.

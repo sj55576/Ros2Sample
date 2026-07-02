@@ -32,6 +32,7 @@ setup(
             'emergency_land = drone_sim.emergency_land:main',
             'formation_controller = drone_sim.formation_controller:main',
             'geofence_monitor = drone_sim.geofence_monitor:main',
+            'mission_state_machine = drone_sim.mission_state_machine:main',
             'sim_drone = drone_sim.sim_drone:main',
             'telemetry_logger = drone_sim.telemetry_logger:main',
             'waypoint_commander = drone_sim.waypoint_commander:main',

@@ -2,6 +2,7 @@ manipulator_simulator:
   ros__parameters:
     frame_id: base_link
     link1_frame_id: link1
+    link2_frame_id: link2
     tool_frame_id: tool0
     joint_names: [joint1, joint2]
     link_lengths: [0.8, 0.6]

@@ -359,7 +359,8 @@ ros2 topic pub /joint_target sensor_msgs/msg/JointState \
 
 ```
 base_link → link1     : joint1 の回転（原点に固定、yaw = theta1）
-link1     → tool0     : joint2 の回転（link1 の先端、x 方向に l1 オフセット）
+link1     → link2     : joint2 の回転（link1 の先端、x 方向に l1 オフセット）
+link2     → tool0     : 手先フレーム（link2 の先端、x 方向に l2 オフセット）
 ```
 
 ```bash
@@ -368,7 +369,8 @@ ros2 run tf2_ros tf2_echo base_link tool0
 
 # 各リンクの変換を個別に確認
 ros2 run tf2_ros tf2_echo base_link link1
-ros2 run tf2_ros tf2_echo link1 tool0
+ros2 run tf2_ros tf2_echo link1 link2
+ros2 run tf2_ros tf2_echo link2 tool0
 ```
 
 ground_robot_sim・drone_sim の TF が「ロボット全体の位置」を表すのに対し、manipulator_sim の TF は「関節で繋がったリンクの姿勢」を表します。
@@ -406,7 +408,7 @@ ros2 run tf2_ros tf2_echo base_link tool0
 | [02 サービスとアクション](02_service_action.md) | Action | `navigate_waypoints` (NavigateWaypoints) | ― | ― |
 | [03 Launch とパラメータ](03_launch_params.md) | パラメータ | `wheel_base`, `max_linear_speed`, `obstacles` 等 | `mass_kg`, `position_kp`, `max_linear_speed` 等 | `link_lengths`, `max_joint_speed`, `joint_names` 等 |
 | [03 Launch とパラメータ](03_launch_params.md) | Launch ファイル | `diff_drive_patrol.launch.py` 等 7 ファイル | `single_quad_waypoint.launch.py` 等 6 ファイル | `planar_reach_demo.launch.py` 等 2 ファイル |
-| [04 TF と座標変換](04_tf_transforms.md) | TF broadcast | `odom→base_link→base_scan` | `odom→base_link`（3D） | `base_link→link1→tool0` |
+| [04 TF と座標変換](04_tf_transforms.md) | TF broadcast | `odom→base_link→base_scan` | `odom→base_link`（3D） | `base_link→link1→link2→tool0` |
 | [05 カスタムインターフェース](05_custom_interfaces.md) | カスタム msg/srv/action | `RobotStatus`, `GetRobotStatus`, `NavigateWaypoints` | `RobotStatus`, `GetRobotStatus` | ― |
 | [06 ライフサイクルと QoS](06_lifecycle_qos.md) | QoS | デフォルト QoS（キューサイズ 10） | デフォルト QoS（キューサイズ 10） | デフォルト QoS（キューサイズ 10） |
 | [07-10 Navigation2](07_nav2_overview.md) | 経路追従 | `waypoint_follower.py` の PID 制御 | `waypoint_commander.py` の到達判定 | ― |
@@ -433,7 +435,7 @@ ros2 run tf2_ros tf2_echo base_link tool0
 ```text
 ground_robot_sim:  odom → base_link → base_scan
 drone_sim:         odom → base_link
-manipulator_sim:   base_link → link1 → tool0
+manipulator_sim:   base_link → link1 → link2 → tool0
 ```
 
 - **ground_robot_sim** と **drone_sim** は「世界座標系でのロボット位置」を表す

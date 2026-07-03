@@ -25,6 +25,7 @@ class ManipulatorSimulator(Node):
         super().__init__('manipulator_simulator')
         self.declare_parameter('frame_id', 'base_link')
         self.declare_parameter('link1_frame_id', 'link1')
+        self.declare_parameter('link2_frame_id', 'link2')
         self.declare_parameter('tool_frame_id', 'tool0')
         self.declare_parameter('joint_names', ['joint1', 'joint2'])
         self.declare_parameter('link_lengths', [0.8, 0.6])
@@ -34,6 +35,7 @@ class ManipulatorSimulator(Node):
 
         self.frame_id = str(self.get_parameter('frame_id').value)
         self.link1_frame_id = str(self.get_parameter('link1_frame_id').value)
+        self.link2_frame_id = str(self.get_parameter('link2_frame_id').value)
         self.tool_frame_id = str(self.get_parameter('tool_frame_id').value)
         self.joint_names = [str(name) for name in self.get_parameter('joint_names').value]
         if len(self.joint_names) != 2:
@@ -109,7 +111,7 @@ class ManipulatorSimulator(Node):
 
     def _publish_tf(self, stamp: Time) -> None:
         theta1, theta2 = self.current_joint_positions
-        l1, _ = self.link_lengths
+        l1, l2 = self.link_lengths
 
         base_to_link1 = TransformStamped()
         base_to_link1.header.stamp = stamp
@@ -122,18 +124,27 @@ class ManipulatorSimulator(Node):
         base_to_link1.transform.rotation.z = z1
         base_to_link1.transform.rotation.w = w1
 
-        link1_to_tool = TransformStamped()
-        link1_to_tool.header.stamp = stamp
-        link1_to_tool.header.frame_id = self.link1_frame_id
-        link1_to_tool.child_frame_id = self.tool_frame_id
-        link1_to_tool.transform.translation.x = l1
-        link1_to_tool.transform.translation.y = 0.0
-        link1_to_tool.transform.translation.z = 0.0
+        link1_to_link2 = TransformStamped()
+        link1_to_link2.header.stamp = stamp
+        link1_to_link2.header.frame_id = self.link1_frame_id
+        link1_to_link2.child_frame_id = self.link2_frame_id
+        link1_to_link2.transform.translation.x = l1
+        link1_to_link2.transform.translation.y = 0.0
+        link1_to_link2.transform.translation.z = 0.0
         z2, w2 = _yaw_to_quat_zw(theta2)
-        link1_to_tool.transform.rotation.z = z2
-        link1_to_tool.transform.rotation.w = w2
+        link1_to_link2.transform.rotation.z = z2
+        link1_to_link2.transform.rotation.w = w2
 
-        self._tf_broadcaster.sendTransform([base_to_link1, link1_to_tool])
+        link2_to_tool = TransformStamped()
+        link2_to_tool.header.stamp = stamp
+        link2_to_tool.header.frame_id = self.link2_frame_id
+        link2_to_tool.child_frame_id = self.tool_frame_id
+        link2_to_tool.transform.translation.x = l2
+        link2_to_tool.transform.translation.y = 0.0
+        link2_to_tool.transform.translation.z = 0.0
+        link2_to_tool.transform.rotation.w = 1.0
+
+        self._tf_broadcaster.sendTransform([base_to_link1, link1_to_link2, link2_to_tool])
 
 
 def main(args: Optional[List[str]] = None) -> None:

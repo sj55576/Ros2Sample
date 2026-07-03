@@ -1,0 +1,19 @@
+simple_occupancy_mapper:
+  ros__parameters:
+    map_width: 220               # グリッド幅[セル] (220 x 0.05m = 11.0m)
+    map_height: 220               # グリッド高さ[セル]
+    resolution: 0.05              # 1セルのサイズ[m/cell]
+    origin_x: -5.5                # マップ原点X[m] (ground_robot_sim のワールド±5.0mをカバー)
+    origin_y: -5.5                # マップ原点Y[m]
+    publish_rate: 1.0             # /map 配信レート[Hz]
+    hit_log_odds: 0.85            # ヒット(障害物検出)時のlog-odds加算量
+    miss_log_odds: -0.4           # ミス(自由空間通過)時のlog-odds加算量
+    log_odds_min: -4.0            # log-odds値の下限(飽和防止)
+    log_odds_max: 4.0             # log-odds値の上限(飽和防止)
+    occupied_threshold: 0.65      # この確率を超えたら占有(100)とみなす
+    free_threshold: 0.35          # この確率を下回ったら自由(0)とみなす
+    # ground_robot_node はTFではbase_scanを0.18m前方に置くが、
+    # シミュレータ内部ではレイをbase位置(x, y)から飛ばしているため既定値は0.0
+    laser_offset_x: 0.0
+    map_frame: 'map'              # マップの座標フレーム名
+    scan_throttle: 1              # Nスキャンに1回統合する(CPU負荷と更新頻度のトレードオフ)

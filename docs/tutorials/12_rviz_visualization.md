@@ -240,7 +240,7 @@ ros2 run tf2_ros tf2_echo base_link tool0
 
 期待する見え方:
 
-- `base_link -> link1 -> tool0` の TF チェーンが見える
+- `base_link -> link1 -> link2 -> tool0` の TF チェーンが見える
 - `tool0` がターゲットに向かって滑らかに動く
 - `tool_pose` はエンドエフェクタ位置の確認に使う
 

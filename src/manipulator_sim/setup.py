@@ -14,6 +14,7 @@ setup(
         (join('share', package_name), ['package.xml', 'README.md']),
         (join('share', package_name, 'config'), glob(join('config', '*.yaml'))),
         (join('share', package_name, 'launch'), glob(join('launch', '*.launch.py'))),
+        (join('share', package_name, 'urdf'), glob(join('urdf', '*.urdf'))),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -27,6 +28,7 @@ setup(
             'manipulator_simulator = manipulator_sim.manipulator_simulator:main',
             'target_commander = manipulator_sim.target_commander:main',
             'ik_target_commander = manipulator_sim.ik_target_commander:main',
+            'moveit_trajectory_bridge = manipulator_sim.moveit_trajectory_bridge:main',
         ],
     },
 )

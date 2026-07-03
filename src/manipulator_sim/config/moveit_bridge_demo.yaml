@@ -6,14 +6,15 @@ manipulator_simulator:
     tool_frame_id: tool0
     joint_names: [joint1, joint2]
     link_lengths: [0.8, 0.6]
-    initial_joint_positions: [0.5, -0.3]
+    initial_joint_positions: [0.0, 0.0]
     max_joint_speed: 1.2
     publish_rate_hz: 30.0
 
-ik_target_commander:
+moveit_trajectory_bridge:
   ros__parameters:
-    link_lengths: [0.8, 0.6]
     joint_names: [joint1, joint2]
-    elbow_up: true
+    input_topic: planned_joint_trajectory
+    output_topic: joint_target
     publish_rate_hz: 30.0
-    clamp_to_workspace: true
+    loop_trajectory: false
+    hold_last_point: true

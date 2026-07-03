@@ -432,3 +432,132 @@ ros2 node list
 - Fixed Frame が `map` になっているか確認する
 - 「Add」→「By topic」で `/map` を選ぶ（「By display type」では手動で Frame を設定する必要がある）
 - `ros2 topic hz /map` でトピックが配信されているか確認する
+
+---
+
+## 発展: オンライン占有格子地図マッピング（SLAM入門）
+
+ここまでの `simple_map_publisher` は障害物の座標をあらかじめ人間が定義した「静的マップ」でした。
+実際のロボットは環境を事前に知らないため、走行しながらセンサ情報だけで地図を組み立てる必要があります。
+この節では `simple_occupancy_mapper` ノードを使って、LiDAR とオドメトリから `OccupancyGrid` を
+オンラインに構築する仕組みを学びます。これは SLAM（Simultaneous Localization and Mapping）の
+「マッピング」部分だけを取り出した最小構成です。
+
+### マッピングの原理
+
+```mermaid
+flowchart LR
+    odom["オドメトリ<br/>ロボット位置(x, y, yaw)"] --> sensor["センサ位置を計算"]
+    scan["LiDAR scan<br/>ranges[]"] --> raycast["Bresenham による<br/>レイキャスティング"]
+    sensor --> raycast
+    raycast --> update["log-oddsの加算/減算<br/>(逆センサモデル)"]
+    update --> grid["log-odds グリッド"]
+    grid --> convert["確率へ変換し<br/>占有値(100/0/-1)を決定"]
+    convert --> map["/map (OccupancyGrid)"]
+```
+
+#### 逆センサモデル（Inverse Sensor Model）
+
+1本のレイ（1つの `ranges[i]`）が観測されたとき、そのレイが通過したセルは「自由」、
+着弾したセルは「障害物」の証拠が少し増えたとみなします。これを確率ではなく
+**log-odds**（対数オッズ）で表現すると、複数回の観測を単純な加算・減算だけで統合できるのが
+このモデルの利点です。
+
+```
+log-odds = log( p / (1 - p) )
+```
+
+- ヒット（レイが障害物に当たった終点セル）: `log-odds += hit_log_odds`（既定 `+0.85`）
+- ミス（レイが通過しただけの途中セル）: `log-odds += miss_log_odds`（既定 `-0.4`）
+
+同じセルが何度も「自由」と観測されれば log-odds はどんどん下がり、何度も「障害物」と
+観測されれば上がっていきます。`log_odds_min` / `log_odds_max` で値を飽和させることで、
+一度誤った観測をしても後の観測で修正できるようにしています。
+
+#### Bresenham によるレイキャスティング
+
+センサ位置から着弾点までの間にあるグリッドセルを漏れなく・重複なく列挙するために、
+`mapping_utils.bresenham_line` で整数演算のみによる Bresenham のアルゴリズムを使っています。
+浮動小数点で刻み幅を決めるより高速かつ正確にセル列を求められます。
+
+```python
+# nav2_learning/mapping_utils.py（抜粋）
+cells = bresenham_line(sensor_gx, sensor_gy, end_gx, end_gy)
+for idx, (gx, gy) in enumerate(cells):
+    delta = hit_log_odds if (idx == last_index and is_hit) else miss_log_odds
+    log_odds[gy * width + gx] = clamp(log_odds[gy * width + gx] + delta, ...)
+```
+
+#### log-odds から占有値への変換
+
+配信直前に log-odds を確率へ戻し、閾値で 3 値（`100` 占有 / `0` 自由 / `-1` 未知）に量子化します。
+
+| 確率 | 占有値 |
+|------|--------|
+| `occupied_threshold`（既定 `0.65`）を超える | `100`（占有） |
+| `free_threshold`（既定 `0.35`）を下回る | `0`（自由） |
+| その中間 | `-1`（未知・情報不足） |
+
+### デモの実行方法
+
+```bash
+ros2 launch nav2_learning occupancy_mapping_demo.launch.py
+```
+
+既定では `diff_drive_patrol` が自動でロボットを走らせ、`simple_occupancy_mapper` が
+`/scan` と `/odom` を統合しながら `/map` を配信し、RViz2 に地図が徐々に埋まっていく様子が
+表示されます。`use_patrol:=false` を付けると自動走行を止められるので、別ターミナルで
+`ros2 run ground_robot_sim teleop_keyboard` を使って手動走行させながらマッピングを試すこともできます。
+
+```bash
+ros2 launch nav2_learning occupancy_mapping_demo.launch.py use_patrol:=false
+```
+
+### 構築した地図で経路計画・追従まで一気通貫する
+
+`simple_occupancy_mapper` が配信する `/map` は `simple_map_publisher` と同じ
+`OccupancyGrid` 型・同じ Latched QoS なので、`simple_path_planner` はマップの出どころを
+区別せずにそのまま経路計画に使えます。つまり「地図構築 → 経路計画 → 追従」を
+1つの `/map` トピックでつなげられます。
+
+```bash
+# ターミナル 1: 自動走行を止めてマッピングデモを起動
+ros2 launch nav2_learning occupancy_mapping_demo.launch.py use_patrol:=false
+
+# ターミナル 2: 手動走行でスタート/ゴール周辺を含む範囲を一通り走らせる
+ros2 run ground_robot_sim teleop_keyboard
+# 十分に走行できたら Ctrl+C で teleop を終了する
+
+# ターミナル 3: 構築済みの /map に対して経路計画を実行
+ros2 run nav2_learning simple_path_planner --ros-args \
+  -p start_x:=0.0 -p start_y:=0.0 -p goal_x:=2.0 -p goal_y:=2.0
+
+# ターミナル 4: 生成された /plan を追従する
+ros2 run nav2_learning simple_path_follower
+```
+
+`simple_path_planner` は `cost != -1` のセルしか通行可能とみなさない（[Step 2](#step-2-map_utils-の座標変換を理解する)
+参照）ため、スタート地点とゴール地点の周辺が **未走行（未知セル）のままだと経路が見つかりません**。
+先に一通り走らせて地図を埋めてから計画する、という順序が重要です。
+
+### 実際の SLAM（slam_toolbox 等）との違い・限界
+
+この簡易実装はマッピングの原理を学ぶためにあえて単純化しています。実際のロボットで使われる
+`slam_toolbox` のような本格的な SLAM とは、主に次の点が異なります。
+
+| 項目 | このデモ（simple_occupancy_mapper） | 実際の SLAM（slam_toolbox 等） |
+|------|-----------------------------------|-------------------------------|
+| 自己位置推定 | オドメトリをそのまま真値として使用（`map`→`odom` は静止 TF） | スキャンマッチングで `map`→`odom` を継続的に補正 |
+| オドメトリ誤差 | 補正されず蓄積し続ける（ドリフト） | スキャンマッチングにより誤差蓄積を抑制 |
+| ループクロージャ | なし（同じ場所に戻っても地図のズレは解消されない） | 既知の場所への復帰を検出し、地図全体を整合させる |
+| スキャンマッチング | なし（各スキャンはオドメトリ姿勢のみで配置） | ICP・相関マッチング等で各スキャンの姿勢を微調整 |
+| 最適化 | なし | ポーズグラフ最適化などで過去の姿勢もまとめて修正 |
+
+特に重要なのは、**オドメトリの誤差がそのまま地図の歪みになる**という点です。実機の車輪は
+スリップしたり、旋回時の角度誤差が蓄積したりするため、走行距離が伸びるほどオドメトリは
+実際の位置からずれていきます。`slam_toolbox` はこのズレをスキャンマッチングで検出し、
+`map`→`odom` の TF を動的に補正することで軌道全体を辻褄が合うように調整します（ループクロージャ）。
+このデモではその補正処理を省略しているため、シミュレータのようにオドメトリがほぼ正確な環境では
+問題なく動作しますが、ドリフトが大きい実機やドリフトを注入した環境では地図が歪んでいく様子を
+観察できます。興味があれば `ground_robot_node` の `initial_x` / `initial_yaw` を変えたり、
+`diff_drive_patrol` の走行パターンを長時間続けたりして、地図がどう崩れていくか試してみましょう。

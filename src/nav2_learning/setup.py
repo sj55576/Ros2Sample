@@ -31,6 +31,7 @@ setup(
             'simple_path_follower = nav2_learning.simple_path_follower:main',
             'nav2_waypoint_client = nav2_learning.nav2_waypoint_client:main',
             'costmap_monitor = nav2_learning.costmap_monitor:main',
+            'simple_occupancy_mapper = nav2_learning.simple_occupancy_mapper:main',
         ],
     },
 )

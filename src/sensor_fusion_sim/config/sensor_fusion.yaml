@@ -21,6 +21,26 @@ complementary_filter:
     child_frame_id: "base_link_fused"
     imu_yaw_weight: 0.05
 
+ekf_node:
+  ros__parameters:
+    publish_rate_hz: 20.0
+    frame_id: "world"
+    child_frame_id: "base_link_ekf"
+    use_imu_orientation: true
+    process_pos_stddev: 0.01
+    process_yaw_stddev: 0.01
+    process_vel_stddev: 0.1
+    process_yaw_rate_stddev: 0.05
+    gps_pos_stddev: 0.5
+    odom_pos_stddev: 0.05
+    odom_vel_stddev: 0.1
+    imu_gyro_stddev: 0.02
+    imu_yaw_stddev: 0.01
+    init_pos_stddev: 1.0
+    init_yaw_stddev: 0.5
+    init_vel_stddev: 0.5
+    init_yaw_rate_stddev: 0.1
+
 lifecycle_data_recorder:
   ros__parameters:
     max_buffer_size: 500

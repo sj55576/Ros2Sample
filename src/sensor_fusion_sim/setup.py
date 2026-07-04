@@ -41,6 +41,8 @@ setup(
             'sensor_fusion_sim.complementary_filter_node:main',
             'lifecycle_data_recorder = '
             'sensor_fusion_sim.lifecycle_data_recorder:main',
+            'ekf_node = '
+            'sensor_fusion_sim.ekf_node:main',
         ],
     },
 )

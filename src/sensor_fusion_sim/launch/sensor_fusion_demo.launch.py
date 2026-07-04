@@ -70,6 +70,13 @@ def generate_launch_description():
             output='screen',
             parameters=[config_file, {'use_sim_time': use_sim_time}],
         ),
+        Node(
+            package='sensor_fusion_sim',
+            executable='ekf_node',
+            name='ekf_node',
+            output='screen',
+            parameters=[config_file, {'use_sim_time': use_sim_time}],
+        ),
         recorder_node,
         RegisterEventHandler(
             OnProcessStart(

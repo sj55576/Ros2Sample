@@ -392,6 +392,10 @@ source /opt/ros/rolling/setup.bash
 ./scripts/rosdep-install.sh rolling
 ```
 
+## コントリビューション
+
+バグ報告、機能要望、チュートリアルに関する質問は GitHub issue（テンプレートあり）からお願いします。開発環境のセットアップ、ブランチ・コミットメッセージの慣例、ローカルでの lint・テスト実行方法は [`CONTRIBUTING.md`](CONTRIBUTING.md) にまとめています。Pull Request を送る際は [`.github/pull_request_template.md`](.github/pull_request_template.md) のチェックリストをご確認ください。
+
 ## English summary
 
 Ros2Sample is a ROS 2 workspace for robot and drone examples. Documentation and tooling are Japanese-first, with Ubuntu 20.04 / 24.04 / 26.04 and ROS 2 Foxy / Lyrical / Jazzy / Kilted / Rolling in mind. The default and CI-primary distribution is Lyrical Luth (May 2026 LTS). Use `scripts/build.sh`, `scripts/lint.sh`, and `scripts/rosdep-install.sh` for common development tasks.

@@ -1,0 +1,58 @@
+name: 質問・チュートリアルサポート
+description: docs/tutorials/ のチュートリアルや使い方に関する質問をします。
+title: "[Question] "
+labels:
+  - question
+body:
+  - type: markdown
+    attributes:
+      value: |
+        質問ありがとうございます。`docs/tutorials/00_learning_path.md` から `22_moveit2_manipulator_planning.md` までのどの章に関する質問か分かると回答しやすくなります。
+
+  - type: textarea
+    id: chapter
+    attributes:
+      label: 該当章
+      description: 該当するチュートリアルのファイル名や章タイトル（例、`docs/tutorials/04_tf_transforms.md` / 04章 TF2 と座標変換）、または該当するパッケージ README を記載してください。
+      placeholder: "docs/tutorials/04_tf_transforms.md（04章 TF2 と座標変換）"
+    validations:
+      required: true
+
+  - type: textarea
+    id: question
+    attributes:
+      label: 質問内容
+      description: 分からない点、詰まっている箇所を具体的に記載してください。
+    validations:
+      required: true
+
+  - type: textarea
+    id: commands
+    attributes:
+      label: 実行コマンド
+      description: 実際に実行したコマンドを順番に記載してください。
+      placeholder: |
+        source /opt/ros/lyrical/setup.bash
+        ./scripts/rosdep-install.sh lyrical
+        ros2 launch ros2_learning tf_demo.launch.py
+      render: bash
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: エラーログ
+      description: エラーが出ている場合は、その出力を貼り付けてください。エラーが出ていない場合は「なし」と記載してください。
+      render: shell
+    validations:
+      required: true
+
+  - type: input
+    id: ros-distro
+    attributes:
+      label: ROS 2 ディストリビューション（任意）
+      description: 例、foxy / jazzy / lyrical
+      placeholder: "lyrical"
+    validations:
+      required: false

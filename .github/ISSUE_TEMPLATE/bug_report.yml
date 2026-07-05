@@ -1,0 +1,88 @@
+name: バグ報告
+description: サンプルの動作不具合やビルドエラーなど、バグを報告します。
+title: "[Bug] "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        バグ報告ありがとうございます。再現に必要な情報をできるだけ具体的に記入してください。
+        チュートリアルに関する質問は「質問・チュートリアルサポート」テンプレートをご利用ください。
+
+  - type: input
+    id: ubuntu-version
+    attributes:
+      label: Ubuntu バージョン
+      description: 例、20.04 / 24.04 / 26.04
+      placeholder: "24.04"
+    validations:
+      required: true
+
+  - type: input
+    id: ros-distro
+    attributes:
+      label: ROS 2 ディストリビューション
+      description: 例、foxy / jazzy / lyrical / kilted / rolling
+      placeholder: "jazzy"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: environment
+    attributes:
+      label: 実行環境
+      description: ホスト環境で直接実行しているか、Docker (docker/compose.yml) を利用しているか
+      options:
+        - ホスト（直接実行）
+        - Docker
+        - その他（本文に記載）
+    validations:
+      required: true
+
+  - type: textarea
+    id: commands
+    attributes:
+      label: 実行したコマンド
+      description: 問題発生までに実行したコマンドを順番に記載してください。
+      placeholder: |
+        source /opt/ros/jazzy/setup.bash
+        ./scripts/rosdep-install.sh jazzy
+        ./scripts/build.sh
+        ros2 launch ground_robot_sim diff_drive_patrol.launch.py
+      render: bash
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: 期待動作
+      description: 本来どのような結果になるはずだったかを記載してください。
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: 実際の挙動
+      description: 実際に起きた現象を記載してください。スクリーンショットがあれば貼り付けてください。
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: エラーログ
+      description: ビルドログ、colcon test の出力、スタックトレースなどを貼り付けてください。長い場合は要点を抜粋してください。
+      render: shell
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: 補足情報（任意）
+      description: 関連する PR / issue 番号、変更した設定ファイルなど、その他の参考情報があれば記載してください。
+    validations:
+      required: false

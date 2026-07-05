@@ -463,3 +463,150 @@ ros2 topic list | grep plan
 ros2 run nav2_learning simple_path_planner \
   --ros-args --log-level INFO
 ```
+
+---
+
+## 発展: 経路平滑化と動的リプラン
+
+A* が返すセル列は、グリッド上を1セルずつ移動した結果であるため、実際には不要な曲がり角を
+多く含んだギザギザの経路になりがちです。また、静的マップを前提にした計画は、走行中に新しい
+障害物が現れると通用しなくなります。この節では `nav2_learning/path_utils.py` の純粋関数を使って、
+`simple_path_planner` がどのように経路を滑らかにし、障害物の変化に応じて自動的に再計画するかを学びます。
+
+```mermaid
+flowchart LR
+    astar["A*<br/>セル列（生の経路）"] --> raw["/plan_raw に配信"]
+    astar --> shortcut["shortcut_path<br/>(LOS判定でショートカット)"]
+    shortcut --> world["grid_to_world<br/>ワールド座標へ変換"]
+    world --> smooth["smooth_path_moving_average<br/>(移動平均)"]
+    smooth --> plan["/plan に配信"]
+    shortcut --> cells["Bresenhamで補間した<br/>全通過セルを保持"]
+    map["/map 更新"] --> blocked{"is_path_blocked?"}
+    cells --> blocked
+    blocked -- "はい" --> astar
+```
+
+### ショートカット法と Bresenham による見通し判定（Line of Sight）
+
+A* の経路は「隣接セルにしか動けない」という制約の下で最短経路を探すため、実際の障害物配置に
+対しては迂回しすぎているウェイポイントが残ることがあります。`shortcut_path` は、経路の先頭
+から順に「直接まっすぐ進んでも障害物にぶつからない、最も遠いウェイポイント」へジャンプする
+貪欲法で、この冗長なウェイポイントを取り除きます。
+
+```python
+# nav2_learning/path_utils.py（抜粋）
+def shortcut_path(grid, width, height, path, cost_threshold):
+    """Greedily remove redundant waypoints by skipping ahead to the farthest visible one."""
+    if len(path) <= 2:
+        return list(path)
+
+    last_index = len(path) - 1
+    result = [path[0]]
+    current_index = 0
+
+    while current_index < last_index:
+        next_index = current_index + 1
+        for candidate_index in range(last_index, current_index, -1):
+            if has_line_of_sight(
+                grid, width, height, path[current_index], path[candidate_index], cost_threshold
+            ):
+                next_index = candidate_index
+                break
+        result.append(path[next_index])
+        current_index = next_index
+
+    return result
+```
+
+「まっすぐ進んでも障害物にぶつからないか」の判定（見通し線 = Line of Sight）には、
+[チュートリアル08の発展節](08_costmap_and_map.md#bresenham-によるレイキャスティング)でも登場した
+`bresenham_line`（`mapping_utils.py` にある実装を再利用）を使い、2点間の直線上にある全セルを
+1つずつ走査します。範囲外のセル・未知セル（`-1`）・`cost_threshold` 以上のセルが1つでもあれば
+見通しなしと判定します。
+
+```python
+# nav2_learning/path_utils.py（抜粋）
+def has_line_of_sight(grid, width, height, a, b, cost_threshold):
+    """Return True if every cell on the straight line between a and b is passable."""
+    for gx, gy in bresenham_line(a[0], a[1], b[0], b[1]):
+        if not is_valid_cell(gx, gy, width, height):
+            return False
+        cost = get_cell(grid, gx, gy, width)
+        if cost == -1 or cost >= cost_threshold:
+            return False
+    return True
+```
+
+この方式は Nav2 の `SimplePlanner` の後段で使われるショートカット・スムージングの考え方に近く、
+計算コストの割に見た目の改善効果が大きいのが特徴です。`shortcut_enabled` パラメータで
+有効/無効を切り替えられます。
+
+### 移動平均による平滑化
+
+ショートカット後の経路はまだ「折れ線」のままなので、角の部分でロボットが急な方向転換を
+要求されます。`smooth_path_moving_average` は各ウェイポイントの周辺 `window` 点（ワールド座標）
+の平均を取ることで、折れ線を滑らかな曲線に近づけます。始点とゴールは経路の意味を保つために
+固定し、端に近い点ではウィンドウを縮小して対応します。
+
+```python
+# nav2_learning/path_utils.py（抜粋）
+def smooth_path_moving_average(points, window):
+    """Smooth a world-coordinate point list with a moving average, keeping endpoints fixed."""
+    if len(points) < 3:
+        return list(points)
+
+    window = max(1, window)
+    if window % 2 == 0:
+        window += 1
+    half_window = window // 2
+    last_index = len(points) - 1
+    smoothed = [points[0]]
+
+    for i in range(1, last_index):
+        lo = max(0, i - half_window)
+        hi = min(last_index, i + half_window)
+        neighborhood = points[lo:hi + 1]
+        avg_x = sum(p[0] for p in neighborhood) / len(neighborhood)
+        avg_y = sum(p[1] for p in neighborhood) / len(neighborhood)
+        smoothed.append((avg_x, avg_y))
+
+    smoothed.append(points[-1])
+    return smoothed
+```
+
+`smoothing_window` を大きくするほど滑らかになりますが、狭い通路では平滑化後の経路が
+壁に近づきすぎる可能性がある点に注意してください（この簡易実装は平滑化後に再度の
+衝突チェックを行いません）。`smoothing_window` を `0` 以下にすると平滑化自体を無効化できます。
+
+### リプランのトリガー設計
+
+`simple_path_planner` はマップを初めて受信したときだけでなく、マップが更新されるたびに
+「今追従している経路が新しい障害物で塞がれていないか」を確認します。判定には
+`is_path_blocked` を使い、経路上のどれか1セルでも範囲外・未知・`cost_threshold` 以上に
+なっていれば `True` を返します。
+
+```python
+# nav2_learning/path_utils.py（抜粋）
+def is_path_blocked(grid, width, height, path_cells, cost_threshold):
+    """Return True if any cell of path_cells is out of bounds, unknown, or above threshold."""
+    for gx, gy in path_cells:
+        if not is_valid_cell(gx, gy, width, height):
+            return True
+        cost = get_cell(grid, gx, gy, width)
+        if cost == -1 or cost >= cost_threshold:
+            return True
+    return False
+```
+
+ここで判定に使う `path_cells` は、**ショートカット後のウェイポイント間を Bresenham で
+補間した、実際にロボットが通過する全セル**です。平滑化後の曲線ではなく、直線区間を
+チェックすることで判定を単純かつ確実にしています。塞がれていると判定されると
+`simple_path_planner` は「経路上に障害物を検知、再計画します」とログを出力し、
+現在のスタート・ゴールパラメータで A* を再実行します。この一連の流れは
+`replan_on_map_change` パラメータで無効化できます。
+
+RViz2 の「Publish Point」ツールで `/clicked_point` にクリック位置を配信すると、
+`simple_map_publisher` がその位置に円形の障害物を追加して `/map` を再配信し、
+上記の流れで動的リプランが発生する様子を実際に観察できます。詳しい手順は
+[nav2_learning/README.md](../../src/nav2_learning/README.md#経路平滑化と動的リプラン)
+を参照してください。

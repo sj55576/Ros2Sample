@@ -7,6 +7,11 @@ simple_path_planner:
     cost_threshold: 50
     allow_diagonal: true
     replan_rate: 0.0
+    # 経路平滑化と動的リプラン（issue #50）
+    shortcut_enabled: true      # A*経路の冗長なウェイポイントをLOS判定で間引く
+    smoothing_window: 5         # 移動平均のウィンドウ幅[点数]（0以下で平滑化を無効化）
+    replan_on_map_change: true  # マップ更新時に現在経路が塞がれていたら自動で再計画する
+    use_odom_start: false       # trueならstart_x/start_yの代わりにオドメトリ位置を使う
 
 simple_path_follower:
   ros__parameters:

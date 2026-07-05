@@ -76,6 +76,25 @@ critical-battery signal makes it land in place from any airborne state. The curr
 published on `/mission_state`. The pure transition rules are implemented in
 `drone_sim/mission_logic.py` and covered by pytest unit tests, independent of ROS.
 
+### Behavior-tree mission demo
+
+```bash
+ros2 launch drone_sim mission_bt_demo.launch.py
+ros2 service call /start_mission std_srvs/srv/Trigger
+ros2 topic echo /mission_state
+ros2 topic echo /bt_trace
+```
+
+`mission_behavior_tree` runs the exact same mission as `mission_state_machine`
+(same topics, services, and parameters, plus `publish_trace`) but drives it with a
+behavior tree instead of an FSM. The minimal BT engine (Sequence / Selector /
+Condition / Action) lives in `drone_sim/bt_core.py` and the mission tree in
+`drone_sim/mission_bt.py`, both pure Python and pytest-covered. Each tick's path
+through the tree is published on `/bt_trace`, so you can watch the emergency and
+RTL branches preempt the mission branch in real time. See tutorial 11
+(`docs/tutorials/11_behavior_tree.md`) for a side-by-side comparison of the two
+implementations.
+
 ## Dynamic parameters
 
 `altitude_hold`, `sim_drone`, and `geofence_monitor` support runtime parameter updates via

@@ -9,3 +9,6 @@ simple_map_publisher:
     wall_obstacles: true
     obstacles: [1.0, 0.0, 0.5, -1.0, 1.0, 0.4, 0.5, -1.5, 0.3]
     inflation_radius_cells: 3
+    # 経路平滑化と動的リプラン（issue #50）: RVizの「Publish Point」で障害物を追加する機能
+    dynamic_obstacles_enabled: true  # falseで/clicked_pointによる障害物追加を無効化
+    click_obstacle_radius: 3         # クリックで追加する円形障害物の半径[セル]

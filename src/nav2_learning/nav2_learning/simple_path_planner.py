@@ -5,7 +5,7 @@ from typing import List, Optional, Tuple
 
 import rclpy
 from geometry_msgs.msg import PoseStamped
-from nav_msgs.msg import OccupancyGrid, Path
+from nav_msgs.msg import OccupancyGrid, Odometry, Path
 from rclpy.node import Node
 from rclpy.qos import QoSDurabilityPolicy, QoSProfile, QoSReliabilityPolicy
 from std_srvs.srv import Trigger
@@ -15,6 +15,12 @@ from nav2_learning.map_utils import (
     grid_to_world,
     is_valid_cell,
     world_to_grid,
+)
+from nav2_learning.path_utils import (
+    bresenham_line,
+    is_path_blocked,
+    shortcut_path,
+    smooth_path_moving_average,
 )
 
 
@@ -30,8 +36,14 @@ class SimplePathPlanner(Node):
         self.declare_parameter('cost_threshold', 50)
         self.declare_parameter('allow_diagonal', True)
         self.declare_parameter('replan_rate', 0.0)
+        self.declare_parameter('shortcut_enabled', True)
+        self.declare_parameter('smoothing_window', 5)
+        self.declare_parameter('replan_on_map_change', True)
+        self.declare_parameter('use_odom_start', False)
 
         self._map: Optional[OccupancyGrid] = None
+        self._odom_position: Optional[Tuple[float, float]] = None
+        self._last_path_cells: List[Tuple[int, int]] = []
 
         latched_qos = QoSProfile(
             depth=1,
@@ -40,7 +52,11 @@ class SimplePathPlanner(Node):
         )
         self.create_subscription(OccupancyGrid, '/map', self._map_callback, latched_qos)
         self._plan_pub = self.create_publisher(Path, '/plan', 10)
+        self._plan_raw_pub = self.create_publisher(Path, '/plan_raw', 10)
         self.create_service(Trigger, '~/plan_path', self._plan_service_callback)
+
+        if bool(self.get_parameter('use_odom_start').value):
+            self.create_subscription(Odometry, '/odom', self._odom_callback, 10)
 
         replan_rate = float(self.get_parameter('replan_rate').value)
         if replan_rate > 0.0:
@@ -49,14 +65,37 @@ class SimplePathPlanner(Node):
         self.get_logger().info('パスプランナー起動: マップを待っています...')
 
     def _map_callback(self, msg: OccupancyGrid) -> None:
-        """Store the received map and trigger initial planning."""
+        """Store the received map and trigger initial planning or replanning on change."""
+        is_first_map = self._map is None
         self._map = msg
         self.get_logger().info(
             f'マップ受信: {msg.info.width}x{msg.info.height}セル'
         )
+
         replan_rate = float(self.get_parameter('replan_rate').value)
-        if replan_rate <= 0.0:
+        if replan_rate > 0.0:
+            return
+
+        if is_first_map:
             self._plan_and_publish()
+        elif self._is_current_path_blocked(msg):
+            self.get_logger().warn('経路上に障害物を検知、再計画します')
+            self._plan_and_publish()
+
+    def _is_current_path_blocked(self, msg: OccupancyGrid) -> bool:
+        """Check whether the updated map now blocks the previously published path."""
+        replan_on_map_change = bool(self.get_parameter('replan_on_map_change').value)
+        if not replan_on_map_change or not self._last_path_cells:
+            return False
+        cost_threshold = int(self.get_parameter('cost_threshold').value)
+        return is_path_blocked(
+            list(msg.data), msg.info.width, msg.info.height,
+            self._last_path_cells, cost_threshold,
+        )
+
+    def _odom_callback(self, msg: Odometry) -> None:
+        """Cache the latest odometry position for use as the planning start."""
+        self._odom_position = (msg.pose.pose.position.x, msg.pose.pose.position.y)
 
     def _plan_service_callback(
         self,
@@ -78,12 +117,11 @@ class SimplePathPlanner(Node):
         return response
 
     def _plan_and_publish(self) -> Optional[Path]:
-        """Run A* and publish the result; return the Path message or None on failure."""
+        """Run A*, shortcut/smooth the path, and publish /plan and /plan_raw."""
         if self._map is None:
             return None
 
-        start_x = float(self.get_parameter('start_x').value)
-        start_y = float(self.get_parameter('start_y').value)
+        start_x, start_y = self._resolve_start()
         goal_x = float(self.get_parameter('goal_x').value)
         goal_y = float(self.get_parameter('goal_y').value)
         cost_threshold = int(self.get_parameter('cost_threshold').value)
@@ -116,7 +154,10 @@ class SimplePathPlanner(Node):
             self.get_logger().warn('パスが見つかりませんでした')
             return None
 
-        path_msg = self._build_path_msg(grid_path, ox, oy, resolution)
+        raw_msg = self._build_path_msg(grid_path, ox, oy, resolution)
+        self._plan_raw_pub.publish(raw_msg)
+
+        path_msg = self._finalize_path(grid_path, cost_threshold, ox, oy, resolution)
         self._plan_pub.publish(path_msg)
         self.get_logger().info(
             f'パス生成完了: {len(grid_path)}セル, '
@@ -124,6 +165,57 @@ class SimplePathPlanner(Node):
             f'計算時間={elapsed * 1000:.1f}ms'
         )
         return path_msg
+
+    def _resolve_start(self) -> Tuple[float, float]:
+        """Determine the planning start position, preferring odometry if configured."""
+        if bool(self.get_parameter('use_odom_start').value):
+            if self._odom_position is not None:
+                return self._odom_position
+            self.get_logger().warn(
+                'use_odom_startが有効ですがオドメトリ未受信のため、start_x/start_yを使用します'
+            )
+        start_x = float(self.get_parameter('start_x').value)
+        start_y = float(self.get_parameter('start_y').value)
+        return start_x, start_y
+
+    def _finalize_path(
+        self,
+        grid_path: List[Tuple[int, int]],
+        cost_threshold: int,
+        origin_x: float,
+        origin_y: float,
+        resolution: float,
+    ) -> Path:
+        """Apply shortcutting/smoothing to the raw A* path and build the publishable message."""
+        if bool(self.get_parameter('shortcut_enabled').value):
+            info = self._map.info
+            cells = shortcut_path(
+                list(self._map.data), info.width, info.height, grid_path, cost_threshold
+            )
+        else:
+            cells = list(grid_path)
+
+        self._last_path_cells = self._interpolate_cells(cells)
+
+        points = [grid_to_world(gx, gy, origin_x, origin_y, resolution) for gx, gy in cells]
+        smoothing_window = int(self.get_parameter('smoothing_window').value)
+        if smoothing_window > 0:
+            points = smooth_path_moving_average(points, smoothing_window)
+
+        return self._build_path_msg_from_points(points)
+
+    def _interpolate_cells(
+        self,
+        cells: List[Tuple[int, int]],
+    ) -> List[Tuple[int, int]]:
+        """Interpolate every consecutive waypoint pair via Bresenham into all traversed cells."""
+        if not cells:
+            return []
+        interpolated: List[Tuple[int, int]] = [cells[0]]
+        for i in range(1, len(cells)):
+            segment = bresenham_line(cells[i - 1][0], cells[i - 1][1], cells[i][0], cells[i][1])
+            interpolated.extend(segment[1:])
+        return interpolated
 
     def _run_astar(
         self,
@@ -154,6 +246,20 @@ class SimplePathPlanner(Node):
         msg.header.frame_id = 'map'
         for gx, gy in grid_path:
             wx, wy = grid_to_world(gx, gy, origin_x, origin_y, resolution)
+            pose = PoseStamped()
+            pose.header = msg.header
+            pose.pose.position.x = wx
+            pose.pose.position.y = wy
+            pose.pose.orientation.w = 1.0
+            msg.poses.append(pose)
+        return msg
+
+    def _build_path_msg_from_points(self, points: List[Tuple[float, float]]) -> Path:
+        """Build a nav_msgs/Path directly from a list of world-coordinate points."""
+        msg = Path()
+        msg.header.stamp = self.get_clock().now().to_msg()
+        msg.header.frame_id = 'map'
+        for wx, wy in points:
             pose = PoseStamped()
             pose.header = msg.header
             pose.pose.position.x = wx

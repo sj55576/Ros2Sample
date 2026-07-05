@@ -115,6 +115,60 @@ ros2 run ground_robot_sim teleop_keyboard
 より詳しい解説は [チュートリアル 08: マップとコストマップ](../../docs/tutorials/08_costmap_and_map.md)
 の「発展」セクションを参照してください。
 
+## 経路平滑化と動的リプラン
+
+### 概要
+
+`simple_path_planner` は A* が生成したギザギザの経路を、見通し線（Line of Sight）判定に基づく
+ショートカット処理と移動平均フィルタで滑らかにします。あわせて `simple_map_publisher` は RViz の
+「Publish Point」ツールでクリックした位置に障害物を追加できるようになり、`simple_path_planner` は
+マップ更新のたびに現在の経路が塞がれていないかを確認して、必要であれば自動的に再計画します。
+
+処理の流れ:
+
+1. A* で求めたセル列（生の経路）を `/plan_raw` に配信する（RViz比較用）
+2. `path_utils.shortcut_path` で見通しが通る最遠のウェイポイントへ直接ショートカットする
+3. ショートカット後のセル列をワールド座標に変換する
+4. `path_utils.smooth_path_moving_average` で移動平均をかけて滑らかにする
+5. 完成した経路を `/plan` に配信する
+6. ショートカット後のセル間を Bresenham で補間した全通過セルを保持し、マップ更新時の閉塞判定に使う
+
+### 新パラメータ表
+
+`simple_path_planner`（`config/simple_planning.yaml`）:
+
+| パラメータ | デフォルト値 | 説明 |
+|-----------|------------|------|
+| `shortcut_enabled` | `true` | A*経路のショートカット処理を有効化する |
+| `smoothing_window` | `5` | 移動平均のウィンドウ幅[点数]（0以下で平滑化を無効化） |
+| `replan_on_map_change` | `true` | マップ更新時に現在経路が塞がれていたら自動で再計画する |
+| `use_odom_start` | `false` | `true`なら`start_x`/`start_y`の代わりに`/odom`の現在位置を計画開始点に使う |
+
+`simple_map_publisher`（`config/map_params.yaml`）:
+
+| パラメータ | デフォルト値 | 説明 |
+|-----------|------------|------|
+| `dynamic_obstacles_enabled` | `true` | `/clicked_point`による動的障害物の追加を有効化する |
+| `click_obstacle_radius` | `3` | クリックで追加する円形障害物の半径[セル] |
+
+### RVizで動的リプランを観察する手順
+
+1. `ros2 launch nav2_learning simple_planning_demo.launch.py` でデモ一式を起動する
+2. RViz2 で `/map`・`/plan`・`/plan_raw` を Add → By topic で表示する（`/plan` と `/plan_raw`
+   は色を変えると比較しやすい）
+3. RViz2 上部ツールバーの「Publish Point」を選択し、経路上の適当な位置をクリックする
+4. `simple_map_publisher` が円形障害物を追加して `/map` を再配信し、`simple_path_planner` が
+   ログに「経路上に障害物を検知、再計画します」と出力して自動的に迂回経路を再計画することを
+   確認する
+
+### /plan_raw と /plan の比較
+
+- `/plan_raw`: A* が返した生のセル列をそのまま経路化したもの（ショートカット・平滑化前）
+- `/plan`: `shortcut_enabled`・`smoothing_window` を適用した後の、実際にロボットが追従する経路
+
+RViz で両方のトピックを重ねて表示すると、`/plan_raw` のギザギザした経路が `/plan` では
+滑らかな曲線に変換されている様子を確認できます。
+
 ## チュートリアル
 
 詳細な学習ガイドは [docs/tutorials/](../../docs/tutorials/) を参照してください:

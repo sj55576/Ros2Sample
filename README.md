@@ -23,7 +23,7 @@
 
 ```text
 .
-├── .github/workflows/ci.yml   # GitHub Actions: 手動実行で Foxy/Jazzy/Lyrical の colcon build/test
+├── .github/workflows/ci.yml   # GitHub Actions: Foxy/Lyrical/Jazzy を matrix 化した colcon build/test
 ├── docker/                    # Docker 開発環境
 ├── docs/                      # 補足ドキュメント
 ├── scripts/                   # 開発者向けヘルパースクリプト
@@ -330,13 +330,21 @@ ROS_DISTRO=foxy UBUNTU_CODENAME=focal docker compose -f docker/compose.yml run -
 
 ## CI
 
-GitHub Actions は `.github/workflows/ci.yml` で定義しています。自動トリガーは無効のまま、手動実行 (`workflow_dispatch`) で Ubuntu 20.04/Foxy、Ubuntu 24.04/Lyrical、Ubuntu 24.04/Jazzy の基本検証を実行できます。
+GitHub Actions は `.github/workflows/ci.yml` で定義しています。Ubuntu 20.04/Foxy、Ubuntu 24.04/Lyrical、Ubuntu 24.04/Jazzy の3組み合わせを `strategy.matrix` の `include` で1つのジョブ定義に統合しており、`fail-fast: false` のため、いずれかの組み合わせが失敗しても他の組み合わせの結果を確認できます。
+
+次のタイミングで自動的に実行されます（`src/**`、`scripts/**`、`ros2.repos`、`.github/workflows/**` に変更があった場合のみ）。
+
+- `main` ブランチへの `push`
+- Pull Request（対象ブランチを問わず）
+- 手動実行 (`workflow_dispatch`)
+
+各ジョブでは次の流れで検証します。
 
 1. `rosdep install`
 2. `./scripts/lint.sh`
 3. `./scripts/build.sh`
 4. `colcon test`
-5. `colcon test-result --verbose`
+5. `colcon test-result --verbose`（結果は Job Summary にも出力されます）
 
 `src/` のパッケージが追加・変更されても、ワークスペース全体の基本検証を同じ流れで実行できるようにしています。
 

@@ -301,6 +301,78 @@ Root
 
 ---
 
+## 実装で確かめる: FSM 版と BT 版のミッションノード
+
+このリポジトリには、同じドローンミッション（離陸 → ウェイポイント巡回 → RTL → 着陸、
+バッテリー低下・アボートによる割り込みつき）を 2 通りで実装したノードがあります。
+
+| 実装 | ノード | ロジック本体（純粋 Python） |
+| --- | --- | --- |
+| 有限状態マシン (FSM) | `drone_sim/mission_state_machine.py` | `drone_sim/mission_logic.py` |
+| ビヘイビアツリー (BT) | `drone_sim/mission_behavior_tree.py` | `drone_sim/bt_core.py` + `drone_sim/mission_bt.py` |
+
+BT エンジンは外部ライブラリ（`py_trees` など）に依存せず、`bt_core.py` に
+`Sequence` / `Selector`（Fallback）/ `Condition` / `Action` の 4 要素だけを
+約 100 行で自前実装しています。ミッションツリーの全体構造は
+`mission_bt.py` の `build_mission_tree()` の docstring に ASCII アートで
+記載されているので、まずそれを読んでから動かすと理解が早いです。
+
+### 動かして比較する
+
+```bash
+# BT 版ミッションデモ（FSM 版は mission_demo.launch.py）
+ros2 launch drone_sim mission_bt_demo.launch.py
+ros2 service call /start_mission std_srvs/srv/Trigger
+
+# どちらの実装でも同じラベルが流れる（IDLE / TAKEOFF / MISSION / RTL / LAND / LANDED）
+ros2 topic echo /mission_state
+
+# BT 版だけ: 毎 tick どの枝が実行されたかのトレース
+ros2 topic echo /bt_trace
+```
+
+`bt_trace` には `is_active?:SUCCESS > emergency?:FAILURE > ... > climb:RUNNING`
+のような「その tick で評価されたノードと結果」が流れます。ミッション中に
+`/abort_mission` を呼ぶと、次の tick からトレースの先頭側で
+`emergency?:SUCCESS > land_in_place:RUNNING` に切り替わる様子が観察でき、
+「優先度の高い枝が RUNNING 中の枝を横取りする」という BT の割り込みを
+実際のログで確認できます。
+
+### FSM 版と BT 版の設計比較
+
+| 観点 | FSM (`mission_logic.py`) | BT (`mission_bt.py`) |
+| --- | --- | --- |
+| 割り込み（アボート・バッテリー） | 空中の**全状態**に LAND への遷移を書く必要がある | 緊急着陸の枝をツリーの**先頭に 1 つ**置くだけ |
+| 優先度の表現 | 各状態内のガード評価順に埋め込まれる | 子ノードの並び順そのものが優先度 |
+| 状態の記憶 | 現在状態が暗黙に記憶を持つ | ブラックボードのラッチフラグ（`landing` など）で明示する |
+| 機能追加（例: ジオフェンス退避） | 関連する全状態に遷移を追加 | 部分木を 1 つ挿入 |
+| 可読性 | 状態×イベントの表として読める | ツリー構造として読める |
+
+どちらが優れているかは一概には言えません。状態数が少なく遷移が単純なうちは
+FSM のほうが直接的ですが、割り込みや優先度つきの振る舞いが増えるほど
+「遷移の組み合わせ爆発」が起き、BT の「枝の追加・差し替え」による拡張が
+有利になります。Nav2 が BT（`bt_navigator`）を採用しているのはまさにこの
+理由です。
+
+ひとつ重要な対比ポイントは**状態の記憶**です。反応型（メモリなし）の BT は
+毎 tick ツリー全体を再評価するため、「着陸を開始したらホーム上空から
+多少ずれても着陸を続ける」のような一度きりの決定は、ブラックボード上の
+ラッチフラグとして明示的に残す必要があります（`mission_bt.py` の
+`_home_reached_or_landing` を参照）。FSM ではこれが「LAND 状態にいること」
+自体で暗黙に表現されていました。BT が状態を消すのではなく、
+**状態をブラックボードに追い出して制御フローと分離する**のだと理解すると、
+両者の関係がクリアになります。
+
+ツリーのロジックはすべて純粋 Python なので、ROS なしで pytest により検証
+できます（`test/test_bt_core.py`, `test/test_mission_bt.py`）:
+
+```bash
+cd src/drone_sim
+python3 -m pytest test/test_bt_core.py test/test_mission_bt.py -q
+```
+
+---
+
 ## 演習問題
 
 ### 演習 1: BT を設計する

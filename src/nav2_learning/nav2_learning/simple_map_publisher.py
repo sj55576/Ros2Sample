@@ -4,9 +4,8 @@ import math
 from typing import List, Tuple
 
 import rclpy
-from builtin_interfaces.msg import Time
-from geometry_msgs.msg import TransformStamped
-from nav_msgs.msg import MapMetaData, OccupancyGrid
+from geometry_msgs.msg import PointStamped, TransformStamped
+from nav_msgs.msg import OccupancyGrid
 from rclpy.node import Node
 from rclpy.qos import QoSDurabilityPolicy, QoSProfile, QoSReliabilityPolicy
 from tf2_ros import StaticTransformBroadcaster
@@ -16,6 +15,7 @@ from nav2_learning.map_utils import (
     draw_filled_circle,
     draw_walls,
     inflate_obstacles,
+    is_valid_cell,
     world_to_grid,
 )
 
@@ -45,6 +45,8 @@ class SimpleMapPublisher(Node):
             [1.0, 0.0, 0.5, -1.0, 1.0, 0.4, 0.5, -1.5, 0.3],
         )
         self.declare_parameter('inflation_radius_cells', 3)
+        self.declare_parameter('dynamic_obstacles_enabled', True)
+        self.declare_parameter('click_obstacle_radius', 3)
 
         width = int(self.get_parameter('map_width').value)
         height = int(self.get_parameter('map_height').value)
@@ -54,6 +56,13 @@ class SimpleMapPublisher(Node):
         wall_obstacles = bool(self.get_parameter('wall_obstacles').value)
         inflation_radius = int(self.get_parameter('inflation_radius_cells').value)
         raw_obstacles = list(self.get_parameter('obstacles').value)
+
+        self._width = width
+        self._height = height
+        self._resolution = resolution
+        self._origin_x = origin_x
+        self._origin_y = origin_y
+        self._inflation_radius = inflation_radius
 
         grid = create_empty_grid(width, height)
 
@@ -66,10 +75,12 @@ class SimpleMapPublisher(Node):
             r_g = max(1, int(math.ceil(r_w / resolution)))
             draw_filled_circle(grid, width, height, cx_g, cy_g, r_g)
 
-        if inflation_radius > 0:
-            grid = inflate_obstacles(grid, width, height, inflation_radius)
+        # クリックによる動的障害物追加のため、インフレーション前の生グリッドを保持しておく
+        self._base_grid = grid
 
-        self._map_msg = self._build_map_msg(grid, width, height, resolution, origin_x, origin_y)
+        self._map_msg = self._build_map_msg(
+            self._inflated_grid(), width, height, resolution, origin_x, origin_y
+        )
 
         latched_qos = QoSProfile(
             depth=1,
@@ -77,6 +88,9 @@ class SimpleMapPublisher(Node):
             durability=QoSDurabilityPolicy.TRANSIENT_LOCAL,
         )
         self._map_pub = self.create_publisher(OccupancyGrid, '/map', latched_qos)
+        self.create_subscription(
+            PointStamped, '/clicked_point', self._clicked_point_callback, 10
+        )
 
         self._tf_broadcaster = StaticTransformBroadcaster(self)
         self._broadcast_map_odom_tf()
@@ -121,6 +135,35 @@ class SimpleMapPublisher(Node):
         tf.child_frame_id = 'odom'
         tf.transform.rotation.w = 1.0
         self._tf_broadcaster.sendTransform(tf)
+
+    def _inflated_grid(self) -> List[int]:
+        """Return the base grid with inflation re-applied, if inflation_radius_cells > 0."""
+        if self._inflation_radius > 0:
+            return inflate_obstacles(
+                self._base_grid, self._width, self._height, self._inflation_radius
+            )
+        return list(self._base_grid)
+
+    def _clicked_point_callback(self, msg: PointStamped) -> None:
+        """Add a circular obstacle at the RViz-clicked point and republish the map."""
+        if not bool(self.get_parameter('dynamic_obstacles_enabled').value):
+            return
+
+        cx_g, cy_g = world_to_grid(
+            msg.point.x, msg.point.y, self._origin_x, self._origin_y, self._resolution
+        )
+        if not is_valid_cell(cx_g, cy_g, self._width, self._height):
+            self.get_logger().warn('クリック位置がマップ範囲外のため障害物を追加できません')
+            return
+
+        radius = int(self.get_parameter('click_obstacle_radius').value)
+        draw_filled_circle(self._base_grid, self._width, self._height, cx_g, cy_g, radius)
+
+        self._map_msg.data = [int(v) for v in self._inflated_grid()]
+        self._publish_map()
+        self.get_logger().info(
+            f'クリック地点に障害物を追加しました: セル=({cx_g}, {cy_g}), 半径={radius}セル'
+        )
 
     def _publish_map(self) -> None:
         """Update the map timestamp and publish."""

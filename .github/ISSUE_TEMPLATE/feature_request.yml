@@ -1,0 +1,46 @@
+name: 機能要望
+description: 新しいサンプル、チュートリアル、ドキュメントなどの追加提案を行います。
+title: "[Feature] "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        機能要望ありがとうございます。既存の issue と重複していないか、事前に検索いただけると助かります。
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: 概要
+      description: 提案したい内容を簡潔に記載してください。
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: 追加内容案
+      description: 具体的に追加・変更したい内容（パッケージ名、チュートリアル章、ドキュメントなど）を記載してください。
+      placeholder: |
+        - 対象パッケージ／ドキュメント:
+        - 追加するノード／トピック／チュートリアル章:
+        - 参考にした既存サンプルや外部資料（あれば）:
+    validations:
+      required: true
+
+  - type: textarea
+    id: background
+    attributes:
+      label: 背景
+      description: なぜこの機能・ドキュメントが必要か、どのような学習・利用シーンを想定しているかを記載してください。
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: 補足情報（任意）
+      description: 関連する issue / PR、参考リンクなどがあれば記載してください。
+    validations:
+      required: false

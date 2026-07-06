@@ -1,4 +1,5 @@
-"""Scenario tests for the behavior-tree mission logic.
+"""
+Scenario tests for the behavior-tree mission logic.
 
 These mirror the transition tests of ``test_mission_logic`` (the FSM
 version) so the two implementations can be checked against the same

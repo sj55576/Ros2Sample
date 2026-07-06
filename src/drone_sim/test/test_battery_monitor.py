@@ -16,7 +16,8 @@ def compute_drain(
     throttle: float,
     dt_sec: float,
 ) -> tuple:
-    """Replicate drain calculation from BatteryMonitor._tick.
+    """
+    Replicate drain calculation from BatteryMonitor._tick.
 
     Returns (new_remaining_wh, percentage, voltage, current).
     """

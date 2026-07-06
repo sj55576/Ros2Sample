@@ -50,14 +50,14 @@ def test_format_telemetry_returns_valid_json():
         current_z=3.0,
     )
     data = json.loads(result)
-    assert data["total_distance_m"] == pytest.approx(100.0)
-    assert data["max_altitude_m"] == pytest.approx(50.0)
-    assert data["max_speed_ms"] == pytest.approx(15.0)
-    assert data["battery_pct"] == pytest.approx(80.0)
-    assert data["flight_time_sec"] == pytest.approx(120.0)
-    assert data["current_x"] == pytest.approx(1.0)
-    assert data["current_y"] == pytest.approx(2.0)
-    assert data["current_z"] == pytest.approx(3.0)
+    assert data['total_distance_m'] == pytest.approx(100.0)
+    assert data['max_altitude_m'] == pytest.approx(50.0)
+    assert data['max_speed_ms'] == pytest.approx(15.0)
+    assert data['battery_pct'] == pytest.approx(80.0)
+    assert data['flight_time_sec'] == pytest.approx(120.0)
+    assert data['current_x'] == pytest.approx(1.0)
+    assert data['current_y'] == pytest.approx(2.0)
+    assert data['current_z'] == pytest.approx(3.0)
 
 
 def test_format_telemetry_contains_all_fields():
@@ -74,13 +74,13 @@ def test_format_telemetry_contains_all_fields():
     )
     data = json.loads(result)
     expected_keys = {
-        "total_distance_m",
-        "max_altitude_m",
-        "max_speed_ms",
-        "battery_pct",
-        "flight_time_sec",
-        "current_x",
-        "current_y",
-        "current_z",
+        'total_distance_m',
+        'max_altitude_m',
+        'max_speed_ms',
+        'battery_pct',
+        'flight_time_sec',
+        'current_x',
+        'current_y',
+        'current_z',
     }
     assert expected_keys == set(data.keys())

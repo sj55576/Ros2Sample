@@ -1,4 +1,4 @@
-"""ros2_learning パッケージのセットアップスクリプト。"""
+"""ros2_learning パッケージのセットアップスクリプト."""
 
 from glob import glob
 from os.path import join
@@ -32,6 +32,7 @@ setup(
     maintainer_email='dev@example.com',
     description='ROS 2 の基礎概念を段階的に学ぶための軽量チュートリアルパッケージ。',
     license='MIT',
+    tests_require=['pytest'],
     entry_points={
         'console_scripts': [
             'minimal_publisher'

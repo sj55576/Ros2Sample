@@ -1,8 +1,8 @@
 """Emergency landing node that descends safely on low battery or manual trigger."""
 
-import rclpy
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
+import rclpy
 from rclpy.node import Node
 from std_msgs.msg import Bool
 from std_srvs.srv import Trigger

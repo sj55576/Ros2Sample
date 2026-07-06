@@ -1,4 +1,5 @@
-"""Keyboard teleop node shared by ground robots and drones (issue #48).
+"""
+Keyboard teleop node shared by ground robots and drones (issue #48).
 
 Reads single keypresses from stdin and publishes ``geometry_msgs/Twist``
 commands on ``cmd_vel``:
@@ -22,9 +23,9 @@ import time
 import tty
 from typing import List, Optional
 
-import rclpy
 from geometry_msgs.msg import Twist
 from ground_robot_sim import teleop_utils
+import rclpy
 from rclpy.node import Node
 
 USAGE = """\

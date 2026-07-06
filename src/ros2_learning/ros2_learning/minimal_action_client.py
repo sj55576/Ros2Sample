@@ -1,17 +1,17 @@
-"""シンプルなウェイポイント巡回アクションクライアントの実装例。"""
+"""シンプルなウェイポイント巡回アクションクライアントの実装例."""
 
-import rclpy
 from geometry_msgs.msg import PoseStamped
+import rclpy
 from rclpy.action import ActionClient
 from rclpy.node import Node
 from sample_interfaces.action import NavigateWaypoints
 
 
 class MinimalActionClient(Node):
-    """NavigateWaypoints アクションにゴールを送信するクライアント。"""
+    """NavigateWaypoints アクションにゴールを送信するクライアント."""
 
     def __init__(self) -> None:
-        """ノードを初期化しアクションクライアントを作成する。"""
+        """ノードを初期化しアクションクライアントを作成する."""
         super().__init__('minimal_action_client')
 
         # アクションクライアントの作成
@@ -29,7 +29,7 @@ class MinimalActionClient(Node):
         )
 
     def _send_goal_once(self) -> None:
-        """一度だけゴールを送信する。"""
+        """一度だけゴールを送信する."""
         if self._goal_sent:
             return
         self._goal_sent = True
@@ -75,7 +75,7 @@ class MinimalActionClient(Node):
         future.add_done_callback(self._on_goal_response)
 
     def _on_goal_response(self, future) -> None:
-        """サーバーがゴールを受け付けたかを確認する。"""
+        """サーバーがゴールを受け付けたかを確認する."""
         goal_handle = future.result()
         if not goal_handle.accepted:
             self.get_logger().warn('ゴールが拒否されました')
@@ -88,7 +88,7 @@ class MinimalActionClient(Node):
         result_future.add_done_callback(self._on_result)
 
     def _on_feedback(self, feedback_msg) -> None:
-        """フィードバックを受信して表示する。"""
+        """フィードバックを受信して表示する."""
         fb = feedback_msg.feedback
         pos = fb.current_position
         self.get_logger().info(
@@ -99,7 +99,7 @@ class MinimalActionClient(Node):
         )
 
     def _on_result(self, future) -> None:
-        """最終結果を受信して表示する。"""
+        """最終結果を受信して表示する."""
         result = future.result().result
         status = '成功' if result.success else '失敗'
         self.get_logger().info(
@@ -110,7 +110,7 @@ class MinimalActionClient(Node):
 
 
 def main(args=None) -> None:
-    """エントリーポイント。"""
+    """エントリーポイント."""
     rclpy.init(args=args)
     node = MinimalActionClient()
     rclpy.spin(node)

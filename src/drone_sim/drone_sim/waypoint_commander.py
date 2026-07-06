@@ -2,10 +2,10 @@
 
 from math import dist
 
-import rclpy
-from drone_sim.waypoint_utils import Point3, parse_waypoints
+from drone_sim.waypoint_utils import parse_waypoints, Point3
 from geometry_msgs.msg import PoseStamped
 from nav_msgs.msg import Odometry
+import rclpy
 from rclpy.node import Node
 
 

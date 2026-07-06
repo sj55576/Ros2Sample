@@ -2,13 +2,12 @@
 
 from typing import Optional
 
-import rclpy
+from drone_sim.telemetry_utils import compute_distance, compute_speed, format_telemetry
 from nav_msgs.msg import Odometry
+import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import BatteryState
 from std_msgs.msg import String
-
-from drone_sim.telemetry_utils import compute_distance, compute_speed, format_telemetry
 
 
 class TelemetryLogger(Node):

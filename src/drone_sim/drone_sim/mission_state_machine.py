@@ -1,4 +1,5 @@
-"""Mission state machine node coordinating takeoff, waypoint flight, RTL, and landing.
+"""
+Mission state machine node coordinating takeoff, waypoint flight, RTL, and landing.
 
 The pure transition rules (state + inputs -> next state) live in
 ``drone_sim.mission_logic`` and are unit tested there; this node only wires ROS
@@ -16,11 +17,11 @@ node is driving the descent.
 import math
 from typing import Optional
 
-import rclpy
 from drone_sim.mission_logic import MissionConfig, MissionInputs, MissionState, next_state
-from drone_sim.waypoint_utils import Point3, parse_waypoints
+from drone_sim.waypoint_utils import parse_waypoints, Point3
 from geometry_msgs.msg import PoseStamped
 from nav_msgs.msg import Odometry
+import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import BatteryState
 from std_msgs.msg import Bool, String

@@ -72,7 +72,7 @@ def test_normalize_angle_wraps_negative():
 
 
 def test_innovation_positive():
-    """measured > predicted yields positive innovation."""
+    """Measured > predicted yields positive innovation."""
     assert innovation(5.0, 3.0) == pytest.approx(2.0)
 
 

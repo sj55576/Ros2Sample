@@ -1,4 +1,4 @@
-"""マップ生成デモの Launch ファイル。"""
+"""マップ生成デモの Launch ファイル."""
 import os
 
 from ament_index_python.packages import get_package_share_directory
@@ -7,7 +7,7 @@ from launch_ros.actions import Node
 
 
 def generate_launch_description():
-    """simple_map_publisher と costmap_monitor を起動する。"""
+    """simple_map_publisher と costmap_monitor を起動する."""
     config = os.path.join(
         get_package_share_directory('nav2_learning'),
         'config',

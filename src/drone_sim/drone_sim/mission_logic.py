@@ -45,7 +45,8 @@ def next_state(
     inputs: MissionInputs,
     config: MissionConfig,
 ) -> Tuple[MissionState, Optional[str]]:
-    """Evaluate one state-machine tick and return (new_state, reason).
+    """
+    Evaluate one state-machine tick and return (new_state, reason).
 
     Guards are evaluated in priority order for each state. When no guard
     fires, the state is unchanged and the reason is None.

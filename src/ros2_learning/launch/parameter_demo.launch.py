@@ -1,4 +1,4 @@
-"""parameter_demo ノードを設定ファイルから起動するランチファイル。"""
+"""parameter_demo ノードを設定ファイルから起動するランチファイル."""
 
 from os.path import join
 
@@ -10,7 +10,7 @@ from launch_ros.actions import Node
 
 
 def generate_launch_description():
-    """parameter_demo ノードのランチディスクリプションを生成する。"""
+    """parameter_demo ノードのランチディスクリプションを生成する."""
     # パッケージの共有ディレクトリからデフォルト設定ファイルのパスを取得する
     share_dir = get_package_share_directory('ros2_learning')
     default_config = join(share_dir, 'config', 'parameter_demo.yaml')

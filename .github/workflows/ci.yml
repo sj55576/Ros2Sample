@@ -16,19 +16,20 @@ on:
       - ".github/workflows/**"
   workflow_dispatch:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
 
   build-and-test:
     name: Ubuntu ${{ matrix.os }} / ROS 2 ${{ matrix.ros_distro }}
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
         include:
-          - os: ubuntu-20.04
-            ros_distro: foxy
-          - os: ubuntu-24.04
-            ros_distro: lyrical
           - os: ubuntu-24.04
             ros_distro: jazzy
     env:

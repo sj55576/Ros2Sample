@@ -2,14 +2,13 @@
 
 import math
 
-import pytest
-
 from manipulator_sim.inverse_kinematics import (
     nearest_reachable,
     solve_ik,
     workspace_radius,
 )
 from manipulator_sim.kinematics import forward_kinematics
+import pytest
 
 
 def test_forward_inverse_roundtrip() -> None:

@@ -1,7 +1,7 @@
 """Open-loop square patrol controller for the sample ground robot."""
 
-import rclpy
 from geometry_msgs.msg import Twist
+import rclpy
 from rclpy.node import Node
 
 

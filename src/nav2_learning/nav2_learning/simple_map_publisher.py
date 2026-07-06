@@ -3,13 +3,7 @@
 import math
 from typing import List, Tuple
 
-import rclpy
 from geometry_msgs.msg import PointStamped, TransformStamped
-from nav_msgs.msg import OccupancyGrid
-from rclpy.node import Node
-from rclpy.qos import QoSDurabilityPolicy, QoSProfile, QoSReliabilityPolicy
-from tf2_ros import StaticTransformBroadcaster
-
 from nav2_learning.map_utils import (
     create_empty_grid,
     draw_filled_circle,
@@ -18,6 +12,11 @@ from nav2_learning.map_utils import (
     is_valid_cell,
     world_to_grid,
 )
+from nav_msgs.msg import OccupancyGrid
+import rclpy
+from rclpy.node import Node
+from rclpy.qos import QoSDurabilityPolicy, QoSProfile, QoSReliabilityPolicy
+from tf2_ros import StaticTransformBroadcaster
 
 
 def _parse_obstacles(raw: List[float]) -> List[Tuple[float, float, float]]:

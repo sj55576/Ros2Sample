@@ -3,19 +3,19 @@
 import math
 from typing import List
 
-import rclpy
 from geometry_msgs.msg import TransformStamped
-from nav_msgs.msg import Odometry, OccupancyGrid
+from nav2_learning.mapping_utils import integrate_scan, log_odds_to_occupancy
+from nav_msgs.msg import OccupancyGrid, Odometry
+import rclpy
 from rclpy.node import Node
 from rclpy.qos import QoSDurabilityPolicy, QoSProfile, QoSReliabilityPolicy
 from sensor_msgs.msg import LaserScan
 from tf2_ros import StaticTransformBroadcaster
 
-from nav2_learning.mapping_utils import integrate_scan, log_odds_to_occupancy
-
 
 class SimpleOccupancyMapper(Node):
-    """Incrementally build an OccupancyGrid from LaserScan and Odometry using log-odds.
+    """
+    Incrementally build an OccupancyGrid from LaserScan and Odometry using log-odds.
 
     Odometry is treated as ground truth (map -> odom is a static identity
     transform), so this node demonstrates the mapping half of SLAM without
@@ -131,7 +131,8 @@ class SimpleOccupancyMapper(Node):
         )
 
     def _broadcast_map_odom_tf(self) -> None:
-        """Broadcast a static identity transform from map to odom.
+        """
+        Broadcast a static identity transform from map to odom.
 
         Odometry is treated as ground truth in this demo: there is no
         localization or loop closure, so map and odom frames never diverge.

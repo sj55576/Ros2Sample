@@ -1,4 +1,4 @@
-"""TF リスナーのデモ: フレーム間の変換を取得してログ出力する。"""
+"""TF リスナーのデモ: フレーム間の変換を取得してログ出力する."""
 
 # ============================================================
 # TF リスナー デモ
@@ -25,18 +25,18 @@
 import math
 
 import rclpy
-import tf2_ros
 from rclpy.duration import Duration
 from rclpy.node import Node
+import tf2_ros
 from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
 
 
 class TfListenerDemo(Node):
-    """フレーム間の変換を定期的に取得してログ出力するデモノード。"""
+    """フレーム間の変換を定期的に取得してログ出力するデモノード."""
 
     def __init__(self) -> None:
-        """ノードを初期化し、TFバッファとリスナーを設定する。"""
+        """ノードを初期化し、TFバッファとリスナーを設定する."""
         super().__init__('tf_listener_demo')
 
         # パラメータの宣言
@@ -72,7 +72,7 @@ class TfListenerDemo(Node):
         )
 
     def _lookup_transform(self) -> None:
-        """source_frame から target_frame への変換を取得してログ出力する。"""
+        """source_frame から target_frame への変換を取得してログ出力する."""
         try:
             # --------------------------------------------------
             # lookup_transform(target, source, time, timeout)
@@ -127,7 +127,7 @@ class TfListenerDemo(Node):
 
 
 def main(args=None) -> None:
-    """ノードのエントリーポイント。"""
+    """ノードのエントリーポイント."""
     rclpy.init(args=args)
     node = TfListenerDemo()
     rclpy.spin(node)

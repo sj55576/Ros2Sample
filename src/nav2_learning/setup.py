@@ -1,6 +1,7 @@
-"""nav2_learning パッケージのセットアップスクリプト。"""
+"""nav2_learning パッケージのセットアップスクリプト."""
 from glob import glob
 from os.path import join
+
 from setuptools import find_packages, setup
 
 package_name = 'nav2_learning'

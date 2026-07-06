@@ -1,17 +1,16 @@
 """Tests for the ground_robot_sim.teleop_utils module."""
 
-import pytest
-
 from ground_robot_sim.teleop_utils import (
-    MOVE_BINDINGS,
-    SCALE_MAX,
-    SCALE_MIN,
     clamp_scale,
     command_for_key,
     is_stop_key,
+    MOVE_BINDINGS,
     scale_factor_for_key,
+    SCALE_MAX,
+    SCALE_MIN,
     scaled_velocity,
 )
+import pytest
 
 
 @pytest.mark.parametrize('key,expected', MOVE_BINDINGS.items())

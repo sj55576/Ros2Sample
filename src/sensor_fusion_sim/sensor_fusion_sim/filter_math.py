@@ -58,7 +58,7 @@ def normalize_angle(angle: float) -> float:
 
 
 def innovation(measured: float, predicted: float) -> float:
-    """Compute measurement innovation (residual)."""
+    """Compute the innovation between a measured and predicted value."""
     return measured - predicted
 
 

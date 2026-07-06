@@ -11,7 +11,8 @@ def solve_ik(
     l2: float,
     elbow_up: bool = True,
 ) -> Optional[Tuple[float, float]]:
-    """Compute joint angles (theta1, theta2) to reach target (x, y).
+    """
+    Compute joint angles (theta1, theta2) to reach target (x, y).
 
     Returns None if the target is unreachable (outside the workspace).
     """

@@ -1,8 +1,8 @@
 """Utility functions for OccupancyGrid manipulation and path planning."""
 
+from collections import deque
 import heapq
 import math
-from collections import deque
 from typing import Dict, List, Optional, Tuple
 
 

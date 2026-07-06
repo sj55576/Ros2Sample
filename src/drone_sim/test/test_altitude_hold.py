@@ -1,7 +1,7 @@
 """Tests for altitude hold PID control logic."""
 
-import pytest
 from drone_sim.pid import PIDController
+import pytest
 
 
 def altitude_hold_command(
@@ -13,6 +13,7 @@ def altitude_hold_command(
 
 
 class TestAltitudeHold:
+
     def test_at_target(self):
         pid = PIDController(kp=1.3, ki=0.1, kd=0.3, output_min=-1.5, output_max=1.5)
         cmd = altitude_hold_command(2.0, 2.0, pid, 0.05)

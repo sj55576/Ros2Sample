@@ -1,4 +1,4 @@
-"""ros2_learning パッケージのセットアップスクリプト。"""
+"""ros2_learning パッケージのセットアップスクリプト."""
 
 from glob import glob
 from os.path import join

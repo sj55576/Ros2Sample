@@ -1,8 +1,7 @@
 """Tests for the drone_sim.formation_controller module."""
 
-import pytest
-
 from drone_sim.formation_utils import compute_formation_target, smooth_position
+import pytest
 
 
 def test_compute_formation_target_positive_offset():

@@ -2,12 +2,11 @@
 
 from typing import Optional, Tuple
 
-import rclpy
+from drone_sim.formation_utils import compute_formation_target, smooth_position
 from geometry_msgs.msg import PoseStamped
 from nav_msgs.msg import Odometry
+import rclpy
 from rclpy.node import Node
-
-from drone_sim.formation_utils import compute_formation_target, smooth_position
 
 
 class FormationController(Node):

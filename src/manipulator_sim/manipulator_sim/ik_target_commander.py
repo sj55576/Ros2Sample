@@ -2,12 +2,11 @@
 
 from typing import List, Optional
 
-import rclpy
 from geometry_msgs.msg import PoseStamped
+from manipulator_sim.inverse_kinematics import nearest_reachable, solve_ik
+import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import JointState
-
-from manipulator_sim.inverse_kinematics import nearest_reachable, solve_ik
 
 
 class IkTargetCommander(Node):

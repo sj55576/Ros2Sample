@@ -7,9 +7,9 @@ mission semantics.
 
 from drone_sim.bt_core import Status
 from drone_sim.mission_bt import (
+    build_mission_tree,
     MissionBlackboard,
     MissionBtConfig,
-    build_mission_tree,
     tick_mission,
 )
 
@@ -41,6 +41,7 @@ def start_mission(tree, bb, position=(0.0, 0.0, 0.0)):
 
 
 class TestIdle:
+
     def test_stays_idle_without_start(self):
         tree, bb = build_mission_tree(), make_bb()
         assert tick(tree, bb) == Status.SUCCESS
@@ -68,6 +69,7 @@ class TestIdle:
 
 
 class TestTakeoffAndMission:
+
     def test_climb_then_visit_waypoints(self):
         tree, bb = build_mission_tree(), make_bb()
         start_mission(tree, bb)
@@ -127,6 +129,7 @@ class TestTakeoffAndMission:
 
 
 class TestRtl:
+
     def test_low_battery_latches_rtl(self):
         tree, bb = build_mission_tree(), make_bb(rtl_battery_pct=30.0)
         start_mission(tree, bb)
@@ -173,6 +176,7 @@ class TestRtl:
 
 
 class TestEmergency:
+
     def test_abort_lands_in_place(self):
         tree, bb = build_mission_tree(), make_bb()
         start_mission(tree, bb)
@@ -207,6 +211,7 @@ class TestEmergency:
 
 
 class TestTrace:
+
     def test_trace_shows_active_branch(self):
         tree, bb = build_mission_tree(), make_bb()
         tick(tree, bb)

@@ -3,11 +3,11 @@
 import math
 import threading
 
-import numpy as np
-import rclpy
 from geometry_msgs.msg import PointStamped, Quaternion
 from nav_msgs.msg import Odometry
+import numpy as np
 from rcl_interfaces.msg import SetParametersResult
+import rclpy
 from rclpy.callback_groups import (
     MutuallyExclusiveCallbackGroup,
     ReentrantCallbackGroup,
@@ -15,18 +15,24 @@ from rclpy.callback_groups import (
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.node import Node
 from rclpy.qos import HistoryPolicy, QoSProfile, ReliabilityPolicy
+from sensor_fusion_sim.ekf_math import (
+    gps_measurement,
+    imu_gyro_measurement,
+    imu_yaw_measurement,
+    initial_covariance,
+    initial_state,
+    make_gps_noise,
+    make_imu_gyro_noise,
+    make_imu_yaw_noise,
+    make_odom_noise,
+    make_process_noise,
+    normalize_angle,
+    odom_measurement,
+    predict,
+    update,
+)
 from sensor_msgs.msg import Imu
 from std_msgs.msg import String
-
-from sensor_fusion_sim.ekf_math import (
-    predict, update,
-    gps_measurement, odom_measurement,
-    imu_gyro_measurement, imu_yaw_measurement,
-    make_process_noise, make_gps_noise, make_odom_noise,
-    make_imu_gyro_noise, make_imu_yaw_noise,
-    initial_state, initial_covariance,
-    normalize_angle,
-)
 
 
 _STDDEV_PARAMS = (
@@ -279,9 +285,9 @@ class EkfNode(Node):
             self._predict_step()
             self._initialized = True
             self._gps_count += 1
-            z, H = gps_measurement(msg.point.x, msg.point.y)
+            z, h = gps_measurement(msg.point.x, msg.point.y)
             self._x, self._P = update(
-                self._x, self._P, z, H, self._R_gps,
+                self._x, self._P, z, h, self._R_gps,
             )
 
     def _on_odom(self, msg: Odometry) -> None:
@@ -290,11 +296,11 @@ class EkfNode(Node):
             self._initialized = True
             self._odom_count += 1
             pos = msg.pose.pose.position
-            z, H = odom_measurement(
+            z, h = odom_measurement(
                 pos.x, pos.y, msg.twist.twist.linear.x,
             )
             self._x, self._P = update(
-                self._x, self._P, z, H, self._R_odom,
+                self._x, self._P, z, h, self._R_odom,
             )
 
     def _on_imu(self, msg: Imu) -> None:
@@ -302,22 +308,22 @@ class EkfNode(Node):
             self._predict_step()
             self._initialized = True
             self._imu_count += 1
-            z, H = imu_gyro_measurement(msg.angular_velocity.z)
+            z, h = imu_gyro_measurement(msg.angular_velocity.z)
             self._x, self._P = update(
-                self._x, self._P, z, H, self._R_imu_gyro,
+                self._x, self._P, z, h, self._R_imu_gyro,
             )
             if self._use_imu_orientation:
                 yaw = _yaw_from_quaternion(msg.orientation)
-                z, H = imu_yaw_measurement(yaw)
+                z, h = imu_yaw_measurement(yaw)
                 self._x, self._P = update(
-                    self._x, self._P, z, H, self._R_imu_yaw,
+                    self._x, self._P, z, h, self._R_imu_yaw,
                     angle_indices=[0],
                 )
 
     def _publish_ekf(self) -> None:
         with self._lock:
             x = self._x
-            P = self._P
+            p = self._P
             gps_count = self._gps_count
             odom_count = self._odom_count
             imu_count = self._imu_count
@@ -335,22 +341,22 @@ class EkfNode(Node):
         odom.twist.twist.angular.z = float(x[4])
 
         pose_cov = [0.0] * 36
-        pose_cov[0] = float(P[0, 0])
-        pose_cov[1] = float(P[0, 1])
-        pose_cov[5] = float(P[0, 2])
-        pose_cov[6] = float(P[1, 0])
-        pose_cov[7] = float(P[1, 1])
-        pose_cov[11] = float(P[1, 2])
-        pose_cov[30] = float(P[2, 0])
-        pose_cov[31] = float(P[2, 1])
-        pose_cov[35] = float(P[2, 2])
+        pose_cov[0] = float(p[0, 0])
+        pose_cov[1] = float(p[0, 1])
+        pose_cov[5] = float(p[0, 2])
+        pose_cov[6] = float(p[1, 0])
+        pose_cov[7] = float(p[1, 1])
+        pose_cov[11] = float(p[1, 2])
+        pose_cov[30] = float(p[2, 0])
+        pose_cov[31] = float(p[2, 1])
+        pose_cov[35] = float(p[2, 2])
         odom.pose.covariance = pose_cov
 
         twist_cov = [0.0] * 36
-        twist_cov[0] = float(P[3, 3])
-        twist_cov[5] = float(P[3, 4])
-        twist_cov[30] = float(P[4, 3])
-        twist_cov[35] = float(P[4, 4])
+        twist_cov[0] = float(p[3, 3])
+        twist_cov[5] = float(p[3, 4])
+        twist_cov[30] = float(p[4, 3])
+        twist_cov[35] = float(p[4, 4])
         odom.twist.covariance = twist_cov
 
         self._ekf_pub.publish(odom)
@@ -361,7 +367,7 @@ class EkfNode(Node):
             f'imu:{imu_count} | '
             f'pos:({float(x[0]):.2f},{float(x[1]):.2f}) '
             f'yaw:{float(x[2]):.2f} v:{float(x[3]):.2f} | '
-            f'trace(P):{float(np.trace(P)):.4f}'
+            f'trace(P):{float(np.trace(p)):.4f}'
         )
         self._diag_pub.publish(diag)
 

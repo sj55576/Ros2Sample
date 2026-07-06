@@ -30,6 +30,7 @@ def compute_drain(
 
 
 class TestThrottle:
+
     def test_zero_velocity(self):
         assert compute_throttle(0.0, 0.0, 0.0, 0.0) == 0.0
 
@@ -50,6 +51,7 @@ class TestThrottle:
 
 
 class TestDrain:
+
     def test_idle_drain(self):
         remaining, pct, voltage, current = compute_drain(
             remaining_wh=50.0, capacity_wh=50.0,

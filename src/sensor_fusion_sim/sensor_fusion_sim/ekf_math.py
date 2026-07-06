@@ -1,4 +1,5 @@
-"""Extended Kalman Filter math for 2D planar motion.
+"""
+Extended Kalman Filter math for 2D planar motion.
 
 State vector: [x, y, yaw, v, yaw_rate] (5 elements)
   x, y       — position in world frame
@@ -28,16 +29,17 @@ def normalize_angle(angle: float) -> float:
 
 def predict(
     x: np.ndarray,
-    P: np.ndarray,
-    Q: np.ndarray,
+    p: np.ndarray,
+    q: np.ndarray,
     dt: float,
 ) -> Tuple[np.ndarray, np.ndarray]:
-    """EKF predict step.
+    """
+    EKF predict step.
 
     Propagates state forward using a constant-velocity unicycle model
     and linearises via the Jacobian to propagate covariance.
 
-    Returns (x_pred, P_pred).
+    Returns (x_pred, p_pred).
     """
     yaw = x[IDX_YAW]
     v = x[IDX_V]
@@ -54,45 +56,46 @@ def predict(
         yr,
     ])
 
-    F = np.eye(STATE_DIM)
-    F[IDX_X, IDX_YAW] = -v * sin_yaw * dt
-    F[IDX_X, IDX_V] = cos_yaw * dt
-    F[IDX_Y, IDX_YAW] = v * cos_yaw * dt
-    F[IDX_Y, IDX_V] = sin_yaw * dt
-    F[IDX_YAW, IDX_YAW_RATE] = dt
+    f = np.eye(STATE_DIM)
+    f[IDX_X, IDX_YAW] = -v * sin_yaw * dt
+    f[IDX_X, IDX_V] = cos_yaw * dt
+    f[IDX_Y, IDX_YAW] = v * cos_yaw * dt
+    f[IDX_Y, IDX_V] = sin_yaw * dt
+    f[IDX_YAW, IDX_YAW_RATE] = dt
 
-    P_pred = F @ P @ F.T + Q
-    return x_pred, P_pred
+    p_pred = f @ p @ f.T + q
+    return x_pred, p_pred
 
 
 def update(
     x: np.ndarray,
-    P: np.ndarray,
+    p: np.ndarray,
     z: np.ndarray,
-    H: np.ndarray,
-    R: np.ndarray,
+    h: np.ndarray,
+    r: np.ndarray,
     angle_indices: Optional[List[int]] = None,
 ) -> Tuple[np.ndarray, np.ndarray]:
-    """EKF update step with a linear observation model.
+    """
+    EKF update step with a linear observation model.
 
     angle_indices: positions in z that represent angles (innovation
     is wrapped to [-pi, pi] for these).
 
-    Returns (x_updated, P_updated).
+    Returns (x_updated, p_updated).
     """
-    y = z - H @ x
+    y = z - h @ x
     if angle_indices:
         for i in angle_indices:
             y[i] = normalize_angle(y[i])
 
-    S = H @ P @ H.T + R
-    K = P @ H.T @ np.linalg.inv(S)
+    s = h @ p @ h.T + r
+    k = p @ h.T @ np.linalg.inv(s)
 
-    x_new = x + K @ y
+    x_new = x + k @ y
     x_new[IDX_YAW] = normalize_angle(x_new[IDX_YAW])
 
-    P_new = (np.eye(STATE_DIM) - K @ H) @ P
-    return x_new, P_new
+    p_new = (np.eye(STATE_DIM) - k @ h) @ p
+    return x_new, p_new
 
 
 # ── Measurement helpers ────────────────────────────────────────────
@@ -103,10 +106,10 @@ def gps_measurement(
 ) -> Tuple[np.ndarray, np.ndarray]:
     """Build z and H for a GPS position measurement [x, y]."""
     z = np.array([x_gps, y_gps])
-    H = np.zeros((2, STATE_DIM))
-    H[0, IDX_X] = 1.0
-    H[1, IDX_Y] = 1.0
-    return z, H
+    h = np.zeros((2, STATE_DIM))
+    h[0, IDX_X] = 1.0
+    h[1, IDX_Y] = 1.0
+    return z, h
 
 
 def odom_measurement(
@@ -114,27 +117,27 @@ def odom_measurement(
 ) -> Tuple[np.ndarray, np.ndarray]:
     """Build z and H for a wheel-odometry measurement [x, y, v]."""
     z = np.array([x_odom, y_odom, v_odom])
-    H = np.zeros((3, STATE_DIM))
-    H[0, IDX_X] = 1.0
-    H[1, IDX_Y] = 1.0
-    H[2, IDX_V] = 1.0
-    return z, H
+    h = np.zeros((3, STATE_DIM))
+    h[0, IDX_X] = 1.0
+    h[1, IDX_Y] = 1.0
+    h[2, IDX_V] = 1.0
+    return z, h
 
 
 def imu_gyro_measurement(yaw_rate: float) -> Tuple[np.ndarray, np.ndarray]:
     """Build z and H for an IMU gyroscope measurement [yaw_rate]."""
     z = np.array([yaw_rate])
-    H = np.zeros((1, STATE_DIM))
-    H[0, IDX_YAW_RATE] = 1.0
-    return z, H
+    h = np.zeros((1, STATE_DIM))
+    h[0, IDX_YAW_RATE] = 1.0
+    return z, h
 
 
 def imu_yaw_measurement(yaw: float) -> Tuple[np.ndarray, np.ndarray]:
     """Build z and H for an IMU orientation measurement [yaw]."""
     z = np.array([yaw])
-    H = np.zeros((1, STATE_DIM))
-    H[0, IDX_YAW] = 1.0
-    return z, H
+    h = np.zeros((1, STATE_DIM))
+    h[0, IDX_YAW] = 1.0
+    return z, h
 
 
 # ── Noise covariance factories ─────────────────────────────────────

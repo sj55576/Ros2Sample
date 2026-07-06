@@ -1,4 +1,5 @@
-"""Pure functions for path shortcutting, smoothing, and blockage detection.
+"""
+Pure functions for path shortcutting, smoothing, and blockage detection.
 
 These helpers operate on flat OccupancyGrid-style data and plain cell/world
 coordinate tuples only; they do not depend on ROS message types so they can be

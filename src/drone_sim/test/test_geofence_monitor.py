@@ -1,8 +1,7 @@
 """Tests for the drone_sim.geofence_monitor module."""
 
-import pytest
-
 from drone_sim.geofence_utils import check_boundary
+import pytest
 
 BOUNDS_MIN = (-10.0, -10.0, 0.0)
 BOUNDS_MAX = (10.0, 10.0, 20.0)

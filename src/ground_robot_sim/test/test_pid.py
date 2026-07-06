@@ -1,8 +1,7 @@
 """Tests for the ground_robot_sim.pid module."""
 
-import pytest
-
 from ground_robot_sim.pid import PIDController
+import pytest
 
 
 def test_p_only():

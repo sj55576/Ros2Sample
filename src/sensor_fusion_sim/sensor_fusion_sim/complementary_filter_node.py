@@ -4,10 +4,10 @@ import math
 import threading
 from typing import Optional
 
-import rclpy
 from geometry_msgs.msg import PointStamped, Quaternion
 from nav_msgs.msg import Odometry
 from rcl_interfaces.msg import SetParametersResult
+import rclpy
 from rclpy.callback_groups import (
     MutuallyExclusiveCallbackGroup,
     ReentrantCallbackGroup,

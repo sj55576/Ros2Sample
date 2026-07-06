@@ -3,10 +3,10 @@
 import math
 from typing import List, Optional, Tuple
 
-import rclpy
 from builtin_interfaces.msg import Time
 from geometry_msgs.msg import PoseStamped, TransformStamped
 from manipulator_sim.kinematics import forward_kinematics, step_towards
+import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import JointState
 from tf2_ros import TransformBroadcaster

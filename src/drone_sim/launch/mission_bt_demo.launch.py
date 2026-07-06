@@ -1,4 +1,5 @@
-"""Launch a drone simulation with the behavior-tree mission demo.
+"""
+Launch a drone simulation with the behavior-tree mission demo.
 
 Identical to ``mission_demo.launch.py`` except the mission is driven by
 ``mission_behavior_tree`` instead of ``mission_state_machine``, so the two

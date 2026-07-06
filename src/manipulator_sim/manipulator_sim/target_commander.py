@@ -3,9 +3,9 @@
 from math import fabs
 from typing import List, Optional, Tuple
 
-import rclpy
 from builtin_interfaces.msg import Time
 from manipulator_sim.kinematics import inverse_kinematics, parse_targets_xy
+import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import JointState
 

@@ -1,4 +1,5 @@
-"""ROS 2 サブスクライバーの最小構成サンプル。
+"""
+ROS 2 サブスクライバーの最小構成サンプル.
 
 このモジュールは、ROS 2 でトピックからメッセージを受信する
 最もシンプルな方法を示します。
@@ -10,13 +11,14 @@ from std_msgs.msg import String
 
 
 class MinimalSubscriber(Node):
-    """'chatter' トピックを購読して受信メッセージをログ出力するノード。
+    """
+    'chatter' トピックを購読して受信メッセージをログ出力するノード.
 
     ROS 2 サブスクライバーの基本的な使い方を学ぶためのサンプルです。
     """
 
     def __init__(self):
-        """ノードを初期化し、サブスクライバーを生成する。"""
+        """ノードを初期化し、サブスクライバーを生成する."""
         # ノード名を 'minimal_subscriber' として ROS 2 に登録する
         super().__init__('minimal_subscriber')
 
@@ -37,7 +39,8 @@ class MinimalSubscriber(Node):
         )
 
     def _listener_callback(self, msg):
-        """メッセージを受信したときに呼ばれるコールバック関数。
+        """
+        メッセージを受信したときに呼ばれるコールバック関数.
 
         サブスクライバーは新しいメッセージが届くたびにこの関数を呼び出す。
         引数 msg には受信したメッセージオブジェクトが入っている。
@@ -47,7 +50,7 @@ class MinimalSubscriber(Node):
 
 
 def main(args=None):
-    """エントリーポイント: ノードを起動して終了まで実行する。"""
+    """エントリーポイント: ノードを起動して終了まで実行する."""
     # rclpy を初期化する（ROS 2 を使う前に必ず呼び出す）
     rclpy.init(args=args)
 

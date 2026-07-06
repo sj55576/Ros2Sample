@@ -1,11 +1,11 @@
-"""アクションサーバーとクライアントを同時に起動するデモ。"""
+"""アクションサーバーとクライアントを同時に起動するデモ."""
 
 from launch import LaunchDescription
 from launch_ros.actions import Node
 
 
 def generate_launch_description() -> LaunchDescription:
-    """アクションデモの LaunchDescription を生成する。"""
+    """アクションデモの LaunchDescription を生成する."""
     return LaunchDescription([
         Node(
             package='ros2_learning',

@@ -1,4 +1,5 @@
-"""Pure behavior-tree mission logic for the drone simulation (no ROS imports).
+"""
+Pure behavior-tree mission logic for the drone simulation (no ROS imports).
 
 This mirrors the mission implemented as a finite state machine in
 ``drone_sim.mission_logic`` — takeoff, waypoint visiting, return to launch,
@@ -24,8 +25,8 @@ Key design notes for comparing with the FSM version:
 implementations can be observed side by side on the ``mission_state`` topic.
 """
 
-import math
 from dataclasses import dataclass, field
+import math
 from typing import List, Optional, Tuple
 
 from drone_sim.bt_core import (
@@ -55,7 +56,8 @@ class MissionBtConfig:
 
 @dataclass
 class MissionBlackboard:
-    """Shared mutable context read and written by every tree leaf.
+    """
+    Shared mutable context read and written by every tree leaf.
 
     Inputs are refreshed by the caller before each tick; state fields are
     owned by the tree; outputs are read back by the caller after each tick.
@@ -212,7 +214,8 @@ def _await_start(bb: MissionBlackboard) -> Status:
 
 
 def build_mission_tree() -> BehaviorNode:
-    """Assemble the mission behavior tree.
+    """
+    Assemble the mission behavior tree.
 
     Tree shape (higher child = higher priority)::
 

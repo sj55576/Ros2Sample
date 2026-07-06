@@ -1,4 +1,4 @@
-"""tf_broadcaster_demo と tf_listener_demo を同時に起動するランチファイル。"""
+"""tf_broadcaster_demo と tf_listener_demo を同時に起動するランチファイル."""
 
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument
@@ -7,7 +7,7 @@ from launch_ros.actions import Node
 
 
 def generate_launch_description():
-    """TF デモノード群のランチディスクリプションを生成する。"""
+    """TF デモノード群のランチディスクリプションを生成する."""
     use_sim_time = LaunchConfiguration('use_sim_time')
 
     return LaunchDescription([

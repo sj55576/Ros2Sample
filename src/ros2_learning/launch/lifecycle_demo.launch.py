@@ -1,11 +1,11 @@
-"""ライフサイクルノードを起動するデモ。"""
+"""ライフサイクルノードを起動するデモ."""
 
 from launch import LaunchDescription
 from launch_ros.actions import LifecycleNode
 
 
 def generate_launch_description() -> LaunchDescription:
-    """ライフサイクルデモの LaunchDescription を生成する。"""
+    """ライフサイクルデモの LaunchDescription を生成する."""
     return LaunchDescription([
         LifecycleNode(
             package='ros2_learning',

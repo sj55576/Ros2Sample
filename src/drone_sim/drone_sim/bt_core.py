@@ -1,4 +1,5 @@
-"""Minimal behavior-tree engine for learning purposes (no ROS imports).
+"""
+Minimal behavior-tree engine for learning purposes (no ROS imports).
 
 This intentionally implements only the classic core of a behavior tree:
 

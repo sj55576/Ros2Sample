@@ -1,7 +1,7 @@
 """Battery simulation node that models energy consumption and publishes battery state."""
 
-import rclpy
 from geometry_msgs.msg import Twist
+import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import BatteryState
 from std_msgs.msg import Bool

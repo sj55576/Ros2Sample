@@ -47,7 +47,8 @@ def inverse_kinematics(
     l2: float,
     elbow_up: bool = False,
 ) -> JointPair:
-    """Solve planar 2-link inverse kinematics.
+    """
+    Solve planar 2-link inverse kinematics.
 
     Raises ValueError when the target is outside the reachable annulus.
     """

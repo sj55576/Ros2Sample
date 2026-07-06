@@ -1,8 +1,7 @@
 """Tests for the drone_sim.waypoint_utils module."""
 
-import pytest
-
 from drone_sim.waypoint_utils import parse_waypoints
+import pytest
 
 
 def test_parse_waypoints_valid_flat_list():
@@ -31,6 +30,6 @@ def test_parse_waypoints_values_are_floats():
 
 
 def test_parse_waypoints_rejects_non_finite_values():
-    """NaN or infinite waypoint components are rejected before node startup."""
+    """Nan or infinite waypoint components are rejected before node startup."""
     with pytest.raises(ValueError, match='finite values'):
         parse_waypoints([0.0, float('nan'), 1.0])

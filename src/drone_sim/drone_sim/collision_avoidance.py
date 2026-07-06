@@ -2,12 +2,11 @@
 
 from typing import Dict, Optional, Tuple
 
-import rclpy
+from drone_sim.collision_utils import apply_avoidance, compute_repulsive_force
 from geometry_msgs.msg import PoseStamped
 from nav_msgs.msg import Odometry
+import rclpy
 from rclpy.node import Node
-
-from drone_sim.collision_utils import apply_avoidance, compute_repulsive_force
 
 
 class CollisionAvoidance(Node):

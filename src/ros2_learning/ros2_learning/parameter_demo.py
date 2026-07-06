@@ -1,19 +1,19 @@
-"""ROS2 パラメータの宣言・取得・動的変更を学ぶデモノード。"""
+"""ROS2 パラメータの宣言・取得・動的変更を学ぶデモノード."""
 
 from typing import List
 
-import rclpy
 from rcl_interfaces.msg import SetParametersResult
+import rclpy
 from rclpy.node import Node
 from rclpy.parameter import Parameter
 from std_msgs.msg import String
 
 
 class ParameterDemo(Node):
-    """パラメータの宣言・取得・動的変更を示すデモノード。"""
+    """パラメータの宣言・取得・動的変更を示すデモノード."""
 
     def __init__(self) -> None:
-        """ノードを初期化し、パラメータとタイマーを設定する。"""
+        """ノードを初期化し、パラメータとタイマーを設定する."""
         super().__init__('parameter_demo')
 
         # --------------------------------------------------
@@ -68,7 +68,7 @@ class ParameterDemo(Node):
     def _on_parameter_change(
         self, params: List[Parameter],
     ) -> SetParametersResult:
-        """パラメータが変更されたときに呼ばれるコールバック。"""
+        """パラメータが変更されたときに呼ばれるコールバック."""
         # --------------------------------------------------
         # 変更前の値を保存しておき、変更後と比較してログ出力する。
         # SetParametersResult(successful=True) を返すと変更が確定する。
@@ -98,7 +98,7 @@ class ParameterDemo(Node):
         return SetParametersResult(successful=True)
 
     def _get_current_value(self, name: str) -> object:
-        """指定した名前の現在のパラメータ値を返す。"""
+        """指定した名前の現在のパラメータ値を返す."""
         mapping = {
             'robot_name': self._robot_name,
             'max_speed': self._max_speed,
@@ -108,7 +108,7 @@ class ParameterDemo(Node):
         return mapping.get(name, None)
 
     def _publish_info(self) -> None:
-        """現在のパラメータ値を robot_info トピックへパブリッシュする。"""
+        """現在のパラメータ値を robot_info トピックへパブリッシュする."""
         msg = String()
         msg.data = (
             f'robot_name={self._robot_name}, '
@@ -123,7 +123,7 @@ class ParameterDemo(Node):
 
 
 def main(args=None) -> None:
-    """ノードのエントリーポイント。"""
+    """ノードのエントリーポイント."""
     rclpy.init(args=args)
     node = ParameterDemo()
     rclpy.spin(node)

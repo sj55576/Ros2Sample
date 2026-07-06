@@ -1,4 +1,4 @@
-"""占有格子地図マッピングデモ。ロボット走行→スキャン統合→OccupancyGrid配信を起動する。"""
+"""占有格子地図マッピングデモ。ロボット走行→スキャン統合→OccupancyGrid配信を起動する."""
 import os
 
 from ament_index_python.packages import get_package_share_directory
@@ -10,7 +10,7 @@ from launch_ros.actions import Node
 
 
 def generate_launch_description():
-    """ground_robot_node・patrol・simple_occupancy_mapper・RViz を起動する。"""
+    """ground_robot_node・patrol・simple_occupancy_mapper・RViz を起動する."""
     use_patrol = LaunchConfiguration('use_patrol')
     use_rviz = LaunchConfiguration('use_rviz')
 

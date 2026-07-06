@@ -1,8 +1,8 @@
 """Publish drone health as diagnostic_msgs/DiagnosticArray."""
 
-import rclpy
 from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus, KeyValue
 from nav_msgs.msg import Odometry
+import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import BatteryState
 

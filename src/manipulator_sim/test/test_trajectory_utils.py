@@ -3,9 +3,8 @@
 from dataclasses import dataclass
 from typing import Tuple
 
-import pytest
-
 from manipulator_sim.trajectory_utils import sample_joint_trajectory
+import pytest
 
 
 @dataclass

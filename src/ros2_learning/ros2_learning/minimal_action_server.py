@@ -1,10 +1,10 @@
-"""シンプルなウェイポイント巡回アクションサーバーの実装例。"""
+"""シンプルなウェイポイント巡回アクションサーバーの実装例."""
 
 import math
 import time
 
-import rclpy
 from geometry_msgs.msg import Point
+import rclpy
 from rclpy.action import ActionServer, CancelResponse, GoalResponse
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.node import Node
@@ -12,10 +12,10 @@ from sample_interfaces.action import NavigateWaypoints
 
 
 class MinimalActionServer(Node):
-    """NavigateWaypoints アクションを処理するサーバーノード。"""
+    """NavigateWaypoints アクションを処理するサーバーノード."""
 
     def __init__(self) -> None:
-        """ノードを初期化しアクションサーバーを作成する。"""
+        """ノードを初期化しアクションサーバーを作成する."""
         super().__init__('minimal_action_server')
 
         # シミュレーション用の現在位置
@@ -48,7 +48,7 @@ class MinimalActionServer(Node):
     def _on_goal(
         self, goal_request: NavigateWaypoints.Goal,
     ) -> GoalResponse:
-        """ゴール要求を受け付けるか判断する。"""
+        """ゴール要求を受け付けるか判断する."""
         n = len(goal_request.waypoints)
         if n == 0:
             self.get_logger().warn('空のウェイポイント — 拒否')
@@ -57,14 +57,14 @@ class MinimalActionServer(Node):
         return GoalResponse.ACCEPT
 
     def _on_cancel(self, goal_handle) -> CancelResponse:
-        """キャンセル要求を常に受け入れる。"""
+        """キャンセル要求を常に受け入れる."""
         self.get_logger().info('キャンセル要求を受理')
         return CancelResponse.ACCEPT
 
     def _execute(
         self, goal_handle,
     ) -> NavigateWaypoints.Result:
-        """ウェイポイントを順番に巡回する。"""
+        """ウェイポイントを順番に巡回する."""
         speed = float(self.get_parameter('speed').value)
         rate_hz = max(
             1.0, float(self.get_parameter('control_rate_hz').value),
@@ -144,7 +144,7 @@ class MinimalActionServer(Node):
     def _make_result(
         self, success: bool, count: int, msg: str,
     ) -> NavigateWaypoints.Result:
-        """結果メッセージを組み立てる。"""
+        """結果メッセージを組み立てる."""
         result = NavigateWaypoints.Result()
         result.success = success
         result.waypoints_completed = count
@@ -154,7 +154,7 @@ class MinimalActionServer(Node):
 
 
 def main(args=None) -> None:
-    """エントリーポイント。"""
+    """エントリーポイント."""
     rclpy.init(args=args)
     node = MinimalActionServer()
     executor = MultiThreadedExecutor()

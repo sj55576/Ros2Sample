@@ -13,7 +13,8 @@ def compute_repulsive_force(
     influence_distance: float,
     gain: float,
 ) -> Tuple[float, float, float]:
-    """Compute the total repulsive force on a drone from all neighbours.
+    """
+    Compute the total repulsive force on a drone from all neighbours.
 
     Uses an inverse-square potential field: for each neighbour within
     *influence_distance*, the repulsive magnitude is

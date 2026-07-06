@@ -1,4 +1,5 @@
-"""Behavior-tree mission node: the BT counterpart of ``mission_state_machine``.
+"""
+Behavior-tree mission node: the BT counterpart of ``mission_state_machine``.
 
 The tree structure and all mission logic live in ``drone_sim.mission_bt``
 (pure Python, unit tested); this node only wires ROS topics/services/
@@ -12,17 +13,17 @@ In addition it publishes the per-tick path through the tree on ``bt_trace``
 so learners can watch which branches run as the mission progresses.
 """
 
-import rclpy
 from drone_sim.bt_core import format_trace
 from drone_sim.mission_bt import (
+    build_mission_tree,
     MissionBlackboard,
     MissionBtConfig,
-    build_mission_tree,
     tick_mission,
 )
 from drone_sim.waypoint_utils import parse_waypoints
 from geometry_msgs.msg import PoseStamped
 from nav_msgs.msg import Odometry
+import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import BatteryState
 from std_msgs.msg import Bool, String

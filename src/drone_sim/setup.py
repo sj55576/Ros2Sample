@@ -23,6 +23,7 @@ setup(
     maintainer_email='dev@example.com',
     description='Dependency-light Python ROS 2 quadrotor simulation samples.',
     license='MIT',
+    tests_require=['pytest'],
     entry_points={
         'console_scripts': [
             'altitude_hold = drone_sim.altitude_hold:main',

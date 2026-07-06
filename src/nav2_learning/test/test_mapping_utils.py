@@ -12,25 +12,25 @@ from nav2_learning.mapping_utils import (
 
 
 def test_bresenham_line_horizontal():
-    """bresenham_line が水平線のセルを正しく列挙することを確認。"""
+    """bresenham_line が水平線のセルを正しく列挙することを確認."""
     cells = bresenham_line(0, 0, 4, 0)
     assert cells == [(0, 0), (1, 0), (2, 0), (3, 0), (4, 0)]
 
 
 def test_bresenham_line_vertical():
-    """bresenham_line が垂直線のセルを正しく列挙することを確認。"""
+    """bresenham_line が垂直線のセルを正しく列挙することを確認."""
     cells = bresenham_line(0, 0, 0, 4)
     assert cells == [(0, 0), (0, 1), (0, 2), (0, 3), (0, 4)]
 
 
 def test_bresenham_line_diagonal():
-    """bresenham_line が45度の対角線のセルを正しく列挙することを確認。"""
+    """bresenham_line が45度の対角線のセルを正しく列挙することを確認."""
     cells = bresenham_line(0, 0, 3, 3)
     assert cells == [(0, 0), (1, 1), (2, 2), (3, 3)]
 
 
 def test_bresenham_line_steep():
-    """bresenham_line が急勾配の線でも両端を含めて正しく列挙することを確認。"""
+    """bresenham_line が急勾配の線でも両端を含めて正しく列挙することを確認."""
     cells = bresenham_line(0, 0, 1, 5)
     assert cells[0] == (0, 0)
     assert cells[-1] == (1, 5)
@@ -38,20 +38,20 @@ def test_bresenham_line_steep():
 
 
 def test_bresenham_line_reversed_endpoints():
-    """bresenham_line が始点と終点の順序を維持することを確認。"""
+    """bresenham_line が始点と終点の順序を維持することを確認."""
     cells = bresenham_line(4, 4, 0, 0)
     assert cells[0] == (4, 4)
     assert cells[-1] == (0, 0)
 
 
 def test_bresenham_line_single_point():
-    """bresenham_line が始点と終点が同じ場合に1セルのみ返すことを確認。"""
+    """bresenham_line が始点と終点が同じ場合に1セルのみ返すことを確認."""
     cells = bresenham_line(2, 2, 2, 2)
     assert cells == [(2, 2)]
 
 
 def test_bresenham_line_step_continuity():
-    """bresenham_line の連続するセルが各軸で最大1しか変化しないことを確認。"""
+    """bresenham_line の連続するセルが各軸で最大1しか変化しないことを確認."""
     cells = bresenham_line(-3, 7, 5, -2)
     assert cells[0] == (-3, 7)
     assert cells[-1] == (5, -2)
@@ -61,26 +61,26 @@ def test_bresenham_line_step_continuity():
 
 
 def test_prob_to_log_odds_round_trip():
-    """prob_to_log_odds と log_odds_to_prob が往復変換で元の値に戻ることを確認。"""
+    """prob_to_log_odds と log_odds_to_prob が往復変換で元の値に戻ることを確認."""
     for probability in (0.1, 0.35, 0.5, 0.65, 0.9):
         log_odds = prob_to_log_odds(probability)
         assert abs(log_odds_to_prob(log_odds) - probability) < 1e-9
 
 
 def test_log_odds_to_prob_zero():
-    """log_odds_to_prob(0.0) が 0.5 を返すことを確認。"""
+    """log_odds_to_prob(0.0) が 0.5 を返すことを確認."""
     assert log_odds_to_prob(0.0) == 0.5
 
 
 def test_log_odds_to_prob_monotonic():
-    """log_odds_to_prob が単調増加であることを確認。"""
+    """log_odds_to_prob が単調増加であることを確認."""
     values = [-5.0, -1.0, 0.0, 1.0, 5.0]
     probabilities = [log_odds_to_prob(v) for v in values]
     assert probabilities == sorted(probabilities)
 
 
 def test_log_odds_to_prob_numerical_stability():
-    """log_odds_to_prob が極端な値でもオーバーフローせず [0, 1] に収まることを確認。"""
+    """log_odds_to_prob が極端な値でもオーバーフローせず [0, 1] に収まることを確認."""
     high = log_odds_to_prob(50.0)
     low = log_odds_to_prob(-50.0)
     assert 0.0 <= high <= 1.0
@@ -90,7 +90,7 @@ def test_log_odds_to_prob_numerical_stability():
 
 
 def test_clamp():
-    """clamp が値を範囲内に収めることを確認。"""
+    """Clamp が値を範囲内に収めることを確認."""
     assert clamp(5.0, 0.0, 10.0) == 5.0
     assert clamp(-1.0, 0.0, 10.0) == 0.0
     assert clamp(11.0, 0.0, 10.0) == 10.0
@@ -114,7 +114,7 @@ def _index(gx, gy):
 
 
 def test_integrate_scan_single_hit_ray():
-    """integrate_scan が単一のヒットレイで終点セルを占有、途中セルを空きにすることを確認。"""
+    """integrate_scan が単一のヒットレイで終点セルを占有、途中セルを空きにすることを確認."""
     log_odds = _make_grid()
     integrate_scan(
         log_odds, GRID_WIDTH, GRID_HEIGHT, ORIGIN_X, ORIGIN_Y, RESOLUTION,
@@ -137,7 +137,7 @@ def test_integrate_scan_single_hit_ray():
 
 
 def test_integrate_scan_out_of_range_ray():
-    """integrate_scan が range=inf のレイで range_max までの空き空間を刻むことを確認。"""
+    """integrate_scan が range=inf のレイで range_max までの空き空間を刻むことを確認."""
     log_odds = _make_grid()
     integrate_scan(
         log_odds, GRID_WIDTH, GRID_HEIGHT, ORIGIN_X, ORIGIN_Y, RESOLUTION,
@@ -150,7 +150,7 @@ def test_integrate_scan_out_of_range_ray():
 
 
 def test_integrate_scan_range_below_min():
-    """integrate_scan が range_min 未満のレイを無視することを確認。"""
+    """integrate_scan が range_min 未満のレイを無視することを確認."""
     log_odds = _make_grid()
     integrate_scan(
         log_odds, GRID_WIDTH, GRID_HEIGHT, ORIGIN_X, ORIGIN_Y, RESOLUTION,
@@ -162,7 +162,7 @@ def test_integrate_scan_range_below_min():
 
 
 def test_integrate_scan_nan_range():
-    """integrate_scan が NaN のレイを無視することを確認。"""
+    """integrate_scan が NaN のレイを無視することを確認."""
     log_odds = _make_grid()
     integrate_scan(
         log_odds, GRID_WIDTH, GRID_HEIGHT, ORIGIN_X, ORIGIN_Y, RESOLUTION,
@@ -174,7 +174,7 @@ def test_integrate_scan_nan_range():
 
 
 def test_integrate_scan_repeated_hit_clamps():
-    """integrate_scan を繰り返し適用しても終点セルが log_odds_max を超えないことを確認。"""
+    """integrate_scan を繰り返し適用しても終点セルが log_odds_max を超えないことを確認."""
     log_odds = _make_grid()
     for _ in range(50):
         integrate_scan(
@@ -189,7 +189,7 @@ def test_integrate_scan_repeated_hit_clamps():
 
 
 def test_integrate_scan_endpoint_beyond_grid():
-    """integrate_scan が終点がグリッド外でも例外を出さず範囲内セルを更新することを確認。"""
+    """integrate_scan が終点がグリッド外でも例外を出さず範囲内セルを更新することを確認."""
     log_odds = _make_grid()
     integrate_scan(
         log_odds, GRID_WIDTH, GRID_HEIGHT, ORIGIN_X, ORIGIN_Y, RESOLUTION,
@@ -205,22 +205,22 @@ def test_integrate_scan_endpoint_beyond_grid():
 
 
 def test_log_odds_to_occupancy_unknown():
-    """log_odds_to_occupancy が 0.0 を未知 (-1) に変換することを確認。"""
+    """log_odds_to_occupancy が 0.0 を未知 (-1) に変換することを確認."""
     assert log_odds_to_occupancy([0.0]) == [-1]
 
 
 def test_log_odds_to_occupancy_occupied():
-    """log_odds_to_occupancy が強い正の値を占有 (100) に変換することを確認。"""
+    """log_odds_to_occupancy が強い正の値を占有 (100) に変換することを確認."""
     assert log_odds_to_occupancy([4.0]) == [100]
 
 
 def test_log_odds_to_occupancy_free():
-    """log_odds_to_occupancy が強い負の値を空き (0) に変換することを確認。"""
+    """log_odds_to_occupancy が強い負の値を空き (0) に変換することを確認."""
     assert log_odds_to_occupancy([-4.0]) == [0]
 
 
 def test_log_odds_to_occupancy_custom_thresholds():
-    """log_odds_to_occupancy がカスタム閾値を尊重することを確認。"""
+    """log_odds_to_occupancy がカスタム閾値を尊重することを確認."""
     log_odds = prob_to_log_odds(0.6)
     assert log_odds_to_occupancy([log_odds], occupied_threshold=0.65, free_threshold=0.35) == [-1]
     assert log_odds_to_occupancy([log_odds], occupied_threshold=0.55, free_threshold=0.35) == [100]

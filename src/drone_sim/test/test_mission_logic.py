@@ -4,6 +4,7 @@ from drone_sim.mission_logic import MissionConfig, MissionInputs, MissionState, 
 
 
 class TestIdle:
+
     def test_stays_idle_with_default_inputs(self):
         state, reason = next_state(MissionState.IDLE, MissionInputs(), MissionConfig())
         assert state == MissionState.IDLE
@@ -41,6 +42,7 @@ class TestIdle:
 
 
 class TestLanded:
+
     def test_start_requested_goes_to_takeoff(self):
         inputs = MissionInputs(start_requested=True)
         state, reason = next_state(MissionState.LANDED, inputs, MissionConfig())
@@ -66,6 +68,7 @@ class TestLanded:
 
 
 class TestTakeoff:
+
     def test_reaches_mission_at_exact_threshold(self):
         config = MissionConfig()
         threshold = config.takeoff_altitude_m - config.arrival_tolerance_m
@@ -117,6 +120,7 @@ class TestTakeoff:
 
 
 class TestMission:
+
     def test_mission_complete_goes_to_rtl(self):
         inputs = MissionInputs(mission_complete=True)
         state, reason = next_state(MissionState.MISSION, inputs, MissionConfig())
@@ -155,6 +159,7 @@ class TestMission:
 
 
 class TestRtl:
+
     def test_reaches_land_at_exact_boundary(self):
         config = MissionConfig()
         inputs = MissionInputs(distance_to_target_m=config.arrival_tolerance_m)
@@ -203,6 +208,7 @@ class TestRtl:
 
 
 class TestLand:
+
     def test_reaches_landed_at_exact_boundary(self):
         config = MissionConfig()
         inputs = MissionInputs(altitude_m=config.landed_altitude_m)
@@ -244,6 +250,7 @@ class TestLand:
 
 
 class TestPriorityOrdering:
+
     def test_takeoff_abort_beats_everything(self):
         inputs = MissionInputs(
             abort_requested=True,
@@ -324,6 +331,7 @@ class TestPriorityOrdering:
 
 
 class TestReasonStrings:
+
     def test_all_reason_strings_match_spec(self):
         config = MissionConfig()
         cases = [

@@ -1,7 +1,5 @@
 """Tests for drone diagnostics publisher logic."""
 
-import pytest
-
 
 def battery_level(pct: float, warn: float, error: float) -> int:
     """Replicate the battery level logic from DroneDiagnosticsPublisher."""
@@ -13,6 +11,7 @@ def battery_level(pct: float, warn: float, error: float) -> int:
 
 
 class TestBatteryDiagnostics:
+
     def test_ok(self):
         assert battery_level(80.0, 30.0, 15.0) == 0
 

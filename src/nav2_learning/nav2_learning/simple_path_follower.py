@@ -4,9 +4,9 @@ import math
 from math import atan2
 from typing import Optional
 
-import rclpy
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry, Path
+import rclpy
 from rclpy.node import Node
 
 

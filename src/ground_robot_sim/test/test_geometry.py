@@ -2,14 +2,13 @@
 
 import math
 
-import pytest
-
 from ground_robot_sim.geometry import (
     normalize_angle,
     parse_circles,
     ray_circle_distance,
     yaw_to_quaternion,
 )
+import pytest
 
 
 def test_normalize_angle_zero():

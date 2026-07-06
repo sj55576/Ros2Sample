@@ -2,9 +2,8 @@
 
 import math
 
-import pytest
-
 from drone_sim.wind_utils import compute_wind
+import pytest
 
 
 def test_zero_base_zero_gust_zero_turbulence():
@@ -82,13 +81,13 @@ def test_turbulence_bounded():
 
 def test_deterministic():
     """The same inputs always produce the same output."""
-    kwargs = dict(
-        base=(0.5, 0.1, 0.0),
-        gust_amplitude=0.3,
-        gust_period_sec=8.0,
-        turbulence_intensity=0.1,
-        elapsed_sec=3.7,
-    )
+    kwargs = {
+        'base': (0.5, 0.1, 0.0),
+        'gust_amplitude': 0.3,
+        'gust_period_sec': 8.0,
+        'turbulence_intensity': 0.1,
+        'elapsed_sec': 3.7,
+    }
     first = compute_wind(**kwargs)
     second = compute_wind(**kwargs)
     assert first[0] == pytest.approx(second[0])

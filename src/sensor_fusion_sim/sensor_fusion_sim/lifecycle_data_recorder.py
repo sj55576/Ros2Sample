@@ -3,8 +3,8 @@
 import json
 from typing import List, Optional
 
-import rclpy
 from nav_msgs.msg import Odometry
+import rclpy
 from rclpy.lifecycle import (
     LifecycleNode,
     LifecycleState,

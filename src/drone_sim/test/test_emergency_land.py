@@ -2,7 +2,8 @@
 
 
 def landing_command(is_landing: bool, altitude: float, descent_speed: float) -> float:
-    """Replicate the _tick logic from EmergencyLand.
+    """
+    Replicate the _tick logic from EmergencyLand.
 
     Returns the commanded vertical velocity (negative = descending).
     Returns 0.0 if not landing or already landed.

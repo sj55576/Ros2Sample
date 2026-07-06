@@ -33,6 +33,7 @@ setup(
         'QoS profiles, and callback groups.'
     ),
     license='MIT',
+    tests_require=['pytest'],
     entry_points={
         'console_scripts': [
             'noisy_sensor_node = '

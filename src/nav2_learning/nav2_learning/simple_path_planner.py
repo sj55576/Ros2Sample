@@ -3,13 +3,7 @@
 import time
 from typing import List, Optional, Tuple
 
-import rclpy
 from geometry_msgs.msg import PoseStamped
-from nav_msgs.msg import OccupancyGrid, Odometry, Path
-from rclpy.node import Node
-from rclpy.qos import QoSDurabilityPolicy, QoSProfile, QoSReliabilityPolicy
-from std_srvs.srv import Trigger
-
 from nav2_learning.map_utils import (
     a_star_search,
     grid_to_world,
@@ -22,6 +16,11 @@ from nav2_learning.path_utils import (
     shortcut_path,
     smooth_path_moving_average,
 )
+from nav_msgs.msg import OccupancyGrid, Odometry, Path
+import rclpy
+from rclpy.node import Node
+from rclpy.qos import QoSDurabilityPolicy, QoSProfile, QoSReliabilityPolicy
+from std_srvs.srv import Trigger
 
 
 class SimplePathPlanner(Node):

@@ -1,4 +1,5 @@
-"""ROS 2 パブリッシャーの最小構成サンプル。
+"""
+ROS 2 パブリッシャーの最小構成サンプル.
 
 このモジュールは、ROS 2 でトピックにメッセージを送信する
 最もシンプルな方法を示します。
@@ -10,13 +11,14 @@ from std_msgs.msg import String
 
 
 class MinimalPublisher(Node):
-    """'chatter' トピックへ文字列メッセージを定期送信するノード。
+    """
+    'chatter' トピックへ文字列メッセージを定期送信するノード.
 
     ROS 2 パブリッシャーの基本的な使い方を学ぶためのサンプルです。
     """
 
     def __init__(self):
-        """ノードを初期化し、パブリッシャーとタイマーを生成する。"""
+        """ノードを初期化し、パブリッシャーとタイマーを生成する."""
         # ノード名を 'minimal_publisher' として ROS 2 に登録する
         super().__init__('minimal_publisher')
 
@@ -46,7 +48,7 @@ class MinimalPublisher(Node):
         )
 
     def _timer_callback(self):
-        """タイマーが発火するたびにメッセージを送信する。"""
+        """タイマーが発火するたびにメッセージを送信する."""
         # 送信するメッセージを組み立てる
         msg = String()
         msg.data = (
@@ -63,7 +65,7 @@ class MinimalPublisher(Node):
 
 
 def main(args=None):
-    """エントリーポイント: ノードを起動して終了まで実行する。"""
+    """エントリーポイント: ノードを起動して終了まで実行する."""
     # rclpy を初期化する（ROS 2 を使う前に必ず呼び出す）
     rclpy.init(args=args)
 

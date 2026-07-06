@@ -3,14 +3,13 @@
 from math import isfinite
 from typing import Optional
 
-import rclpy
+from drone_sim.geofence_utils import check_boundary
 from geometry_msgs.msg import PoseStamped
 from nav_msgs.msg import Odometry
 from rcl_interfaces.msg import SetParametersResult
+import rclpy
 from rclpy.node import Node
 from std_msgs.msg import Bool
-
-from drone_sim.geofence_utils import check_boundary
 
 # Maps a boundary parameter name to (bound side, axis index into the
 # 3-tuples used for _bounds_min / _bounds_max).

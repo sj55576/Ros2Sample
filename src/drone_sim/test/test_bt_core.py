@@ -1,16 +1,15 @@
 """Tests for the minimal behavior-tree engine."""
 
-import pytest
-
 from drone_sim.bt_core import (
     Action,
     Condition,
+    format_trace,
     Inverter,
     Selector,
     Sequence,
     Status,
-    format_trace,
 )
+import pytest
 
 
 class Blackboard:
@@ -32,6 +31,7 @@ def const_action(name, status, log=None):
 
 
 class TestLeaves:
+
     def test_condition_true_is_success(self):
         node = Condition('c', lambda bb: True)
         assert node.tick(Blackboard()) == Status.SUCCESS
@@ -51,6 +51,7 @@ class TestLeaves:
 
 
 class TestSequence:
+
     def test_all_success(self):
         node = Sequence('s', [const_action('a', Status.SUCCESS),
                               const_action('b', Status.SUCCESS)])
@@ -81,6 +82,7 @@ class TestSequence:
 
 
 class TestSelector:
+
     def test_first_success_wins(self):
         log = []
         node = Selector('f', [
@@ -126,6 +128,7 @@ class TestSelector:
 
 
 class TestInverter:
+
     def test_inverts_success_and_failure(self):
         assert Inverter('i', const_action('a', Status.SUCCESS)).tick(Blackboard()) \
             == Status.FAILURE
@@ -138,6 +141,7 @@ class TestInverter:
 
 
 class TestTrace:
+
     def test_trace_records_visited_nodes_in_tick_order(self):
         bb = Blackboard()
         node = Sequence('s', [

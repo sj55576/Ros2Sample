@@ -2,7 +2,6 @@
 
 from os.path import join
 
-import launch.events
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import (
@@ -11,6 +10,7 @@ from launch.actions import (
     RegisterEventHandler,
 )
 from launch.event_handlers import OnProcessStart
+import launch.events
 from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import LifecycleNode, Node
 from launch_ros.event_handlers import OnStateTransition

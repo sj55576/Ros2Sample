@@ -1,10 +1,10 @@
 """Action client for Nav2 NavigateToPose - demonstrates Nav2 integration."""
 
 import math
-from typing import List, Optional, Tuple
+from typing import List, Tuple
 
-import rclpy
 from geometry_msgs.msg import PoseStamped
+import rclpy
 from rclpy.node import Node
 
 try:

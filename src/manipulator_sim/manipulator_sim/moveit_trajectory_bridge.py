@@ -2,12 +2,11 @@
 
 from typing import List, Optional
 
+from manipulator_sim.trajectory_utils import sample_joint_trajectory
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import JointState
 from trajectory_msgs.msg import JointTrajectory
-
-from manipulator_sim.trajectory_utils import sample_joint_trajectory
 
 
 class MoveItTrajectoryBridge(Node):

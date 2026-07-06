@@ -1,4 +1,4 @@
-"""経路計画と追従のデモ。マップ生成→A*計画→Pure Pursuit追従の全パイプラインを起動。"""
+"""経路計画と追従のデモ。マップ生成→A*計画→Pure Pursuit追従の全パイプラインを起動."""
 import os
 
 from ament_index_python.packages import get_package_share_directory
@@ -7,7 +7,7 @@ from launch_ros.actions import Node
 
 
 def generate_launch_description():
-    """ground_robot_node・マップ・プランナー・フォロワーを全て起動する。"""
+    """ground_robot_node・マップ・プランナー・フォロワーを全て起動する."""
     nav2_config = os.path.join(
         get_package_share_directory('nav2_learning'),
         'config',

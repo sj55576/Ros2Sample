@@ -2,8 +2,6 @@
 
 import math
 
-import pytest
-
 from manipulator_sim.kinematics import (
     clamp,
     forward_kinematics,
@@ -12,6 +10,7 @@ from manipulator_sim.kinematics import (
     step_towards,
     wrap_angle,
 )
+import pytest
 
 
 def test_parse_targets_xy_valid_pairs() -> None:
@@ -56,7 +55,7 @@ def test_inverse_kinematics_elbow_branches_differ() -> None:
 
 
 def test_clamp_limits_to_boundaries() -> None:
-    """clamp should keep values inside the given range bounds."""
+    """Clamp should keep values inside the given range bounds."""
     assert clamp(0.5, 0.0, 1.0) == pytest.approx(0.5)
     assert clamp(-0.2, 0.0, 1.0) == pytest.approx(0.0)
     assert clamp(1.2, 0.0, 1.0) == pytest.approx(1.0)
@@ -70,7 +69,7 @@ def test_wrap_angle_normalizes_into_pi_range() -> None:
 
 
 def test_parse_targets_xy_rejects_non_finite_values() -> None:
-    """NaN or infinite target coordinates should fail validation."""
+    """Nan or infinite target coordinates should fail validation."""
     with pytest.raises(ValueError, match='finite values'):
         parse_targets_xy([0.5, float('nan')])
 

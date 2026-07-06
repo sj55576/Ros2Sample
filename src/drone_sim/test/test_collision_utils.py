@@ -2,9 +2,8 @@
 
 import math
 
-import pytest
-
 from drone_sim.collision_utils import apply_avoidance, compute_repulsive_force
+import pytest
 
 
 def test_no_neighbours():

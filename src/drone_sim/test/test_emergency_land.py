@@ -1,7 +1,5 @@
 """Tests for emergency landing logic."""
 
-import pytest
-
 
 def landing_command(is_landing: bool, altitude: float, descent_speed: float) -> float:
     """Replicate the _tick logic from EmergencyLand.
@@ -25,6 +23,7 @@ def should_trigger_landing(
 
 
 class TestLandingCommand:
+
     def test_not_landing(self):
         assert landing_command(False, 10.0, 0.5) == 0.0
 
@@ -45,6 +44,7 @@ class TestLandingCommand:
 
 
 class TestLandingTrigger:
+
     def test_low_battery_triggers(self):
         assert should_trigger_landing(True, False) is True
 

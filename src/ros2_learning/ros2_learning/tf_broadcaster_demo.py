@@ -1,4 +1,4 @@
-"""TF ブロードキャスターのデモ: 動的変換と静的変換の両方を配信する。"""
+"""TF ブロードキャスターのデモ: 動的変換と静的変換の両方を配信する."""
 
 # ============================================================
 # TF ブロードキャスター デモ
@@ -25,17 +25,17 @@
 
 import math
 
-import rclpy
 from geometry_msgs.msg import TransformStamped
+import rclpy
 from rclpy.node import Node
 from tf2_ros import StaticTransformBroadcaster, TransformBroadcaster
 
 
 class TfBroadcasterDemo(Node):
-    """円軌道の動的変換と固定の静的変換を配信するデモノード。"""
+    """円軌道の動的変換と固定の静的変換を配信するデモノード."""
 
     def __init__(self) -> None:
-        """ノードを初期化し、TFブロードキャスターとタイマーを設定する。"""
+        """ノードを初期化し、TFブロードキャスターとタイマーを設定する."""
         super().__init__('tf_broadcaster_demo')
 
         # パラメータの宣言
@@ -91,7 +91,7 @@ class TfBroadcasterDemo(Node):
         )
 
     def _publish_static_transform(self) -> None:
-        """sensor_frame の静的変換を一度だけ配信する。"""
+        """sensor_frame の静的変換を一度だけ配信する."""
         msg = TransformStamped()
         msg.header.stamp = self.get_clock().now().to_msg()
         # 静的変換の親フレームは child_frame (= learning_robot)
@@ -116,7 +116,7 @@ class TfBroadcasterDemo(Node):
         )
 
     def _publish_transform(self) -> None:
-        """円軌道の動的変換を 30 Hz で配信する。"""
+        """円軌道の動的変換を 30 Hz で配信する."""
         # タイムステップごとに角度を更新する
         dt = 1.0 / 30.0
         self._angle += self._orbit_speed * dt
@@ -146,7 +146,7 @@ class TfBroadcasterDemo(Node):
 
 
 def main(args=None) -> None:
-    """ノードのエントリーポイント。"""
+    """ノードのエントリーポイント."""
     rclpy.init(args=args)
     node = TfBroadcasterDemo()
     rclpy.spin(node)

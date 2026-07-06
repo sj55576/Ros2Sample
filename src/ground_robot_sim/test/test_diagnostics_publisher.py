@@ -1,8 +1,5 @@
 """Tests for ground robot diagnostics publisher logic."""
 
-import math
-import pytest
-
 
 def proximity_level(min_range: float, warn_threshold: float) -> int:
     """Replicate proximity level logic from GroundRobotDiagnosticsPublisher."""
@@ -19,6 +16,7 @@ def speed_level(speed: float, warn_threshold: float) -> int:
 
 
 class TestProximityDiagnostics:
+
     def test_clear(self):
         assert proximity_level(2.0, 0.3) == 0
 
@@ -33,6 +31,7 @@ class TestProximityDiagnostics:
 
 
 class TestSpeedDiagnostics:
+
     def test_normal(self):
         assert speed_level(0.3, 0.7) == 0
 

@@ -1,8 +1,7 @@
 """Tests for the ground_robot_sim.waypoint_follower module."""
 
-import pytest
-
 from ground_robot_sim.waypoint_follower import parse_waypoints_xy
+import pytest
 
 
 def test_parse_waypoints_xy_valid_pairs():
@@ -37,6 +36,6 @@ def test_parse_waypoints_xy_converts_values_to_float():
 
 
 def test_parse_waypoints_xy_rejects_non_finite_values():
-    """NaN or infinite waypoint components are rejected before control starts."""
+    """Nan or infinite waypoint components are rejected before control starts."""
     with pytest.raises(ValueError, match='finite values'):
         parse_waypoints_xy([0.0, float('inf')])

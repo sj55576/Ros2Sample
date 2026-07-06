@@ -2,8 +2,8 @@
 
 from typing import Optional
 
-import rclpy
 from nav_msgs.msg import OccupancyGrid
+import rclpy
 from rclpy.node import Node
 from rclpy.qos import QoSDurabilityPolicy, QoSProfile, QoSReliabilityPolicy
 

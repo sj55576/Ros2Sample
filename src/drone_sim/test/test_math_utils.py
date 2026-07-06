@@ -2,9 +2,8 @@
 
 import math
 
-import pytest
-
 from drone_sim.math_utils import clamp, normalize_angle, quat_from_euler
+import pytest
 
 
 def test_clamp_inside_range():

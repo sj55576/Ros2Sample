@@ -41,7 +41,8 @@ def sample_joint_trajectory(
     elapsed_sec: float,
     loop: bool = False,
 ) -> Tuple[Tuple[float, ...], bool]:
-    """Sample trajectory positions at elapsed seconds.
+    """
+    Sample trajectory positions at elapsed seconds.
 
     Returns ``(positions, complete)``. Positions are linearly interpolated between
     neighboring trajectory points and reordered to match ``output_joint_names``.

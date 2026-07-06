@@ -3,9 +3,8 @@
 import json
 import math
 
-import pytest
-
 from drone_sim.telemetry_utils import compute_distance, compute_speed, format_telemetry
+import pytest
 
 
 def test_compute_distance_same_point():

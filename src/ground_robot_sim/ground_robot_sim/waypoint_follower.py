@@ -4,17 +4,18 @@ import math
 from math import atan2
 from typing import List, Tuple
 
-import rclpy
 from geometry_msgs.msg import Twist
 from ground_robot_sim.geometry import normalize_angle
 from ground_robot_sim.pid import PIDController
 from nav_msgs.msg import Odometry
 from rcl_interfaces.msg import SetParametersResult
+import rclpy
 from rclpy.node import Node
 
 
 def parse_waypoints_xy(raw: List[float]) -> List[Tuple[float, float]]:
-    """Parse a flat [x1, y1, x2, y2, ...] list into (x, y) tuples.
+    """
+    Parse a flat [x1, y1, x2, y2, ...] list into (x, y) tuples.
 
     Raises ValueError when the list is empty, has odd length, or contains
     fewer than two values (i.e., no complete waypoint pair).

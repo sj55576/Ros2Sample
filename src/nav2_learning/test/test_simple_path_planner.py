@@ -8,7 +8,7 @@ from nav2_learning.map_utils import (
 
 
 def test_straight_line_path():
-    """障害物のない空グリッドで A* が直接経路を見つけることを確認。"""
+    """障害物のない空グリッドで A* が直接経路を見つけることを確認."""
     grid = create_empty_grid(20, 20)
     path = a_star_search(
         grid, 20, 20, (1, 1), (18, 18), cost_threshold=50, allow_diagonal=True
@@ -20,7 +20,7 @@ def test_straight_line_path():
 
 
 def test_path_around_obstacle():
-    """A* が障害物を回避して経路を見つけることを確認。"""
+    """A* が障害物を回避して経路を見つけることを確認."""
     grid = create_empty_grid(20, 20)
     # (10, 5) から (10, 15) への縦方向の壁
     draw_filled_rectangle(grid, 20, 20, 10, 5, 10, 15, value=100)
@@ -34,7 +34,7 @@ def test_path_around_obstacle():
 
 
 def test_no_path_blocked():
-    """ゴールへの経路が完全に塞がれている場合に A* が None を返すことを確認。"""
+    """ゴールへの経路が完全に塞がれている場合に A* が None を返すことを確認."""
     grid = create_empty_grid(10, 10)
     # 経路を完全に塞ぐ縦壁
     draw_filled_rectangle(grid, 10, 10, 5, 0, 5, 9, value=100)
@@ -45,7 +45,7 @@ def test_no_path_blocked():
 
 
 def test_four_connected():
-    """4方向接続での探索が縦横移動のみを使用することを確認。"""
+    """4方向接続での探索が縦横移動のみを使用することを確認."""
     grid = create_empty_grid(10, 10)
     path = a_star_search(
         grid, 10, 10, (0, 0), (5, 5), cost_threshold=50, allow_diagonal=False

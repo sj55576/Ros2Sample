@@ -1,11 +1,11 @@
-"""パブリッシャーとサブスクライバーを同時に起動するランチファイル。"""
+"""パブリッシャーとサブスクライバーを同時に起動するランチファイル."""
 
 from launch import LaunchDescription
 from launch_ros.actions import Node
 
 
 def generate_launch_description():
-    """minimal_publisher と minimal_subscriber を起動する。"""
+    """minimal_publisher と minimal_subscriber を起動する."""
     # パブリッシャーノードの定義
     publisher_node = Node(
         package='ros2_learning',

@@ -1,8 +1,7 @@
 """Tests for the drone_sim.pid module."""
 
-import pytest
-
 from drone_sim.pid import PIDController
+import pytest
 
 
 def test_p_only_output():

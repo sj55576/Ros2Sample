@@ -2,9 +2,10 @@
 
 import math
 
-from geometry_msgs.msg import TransformStamped, Twist
+from geometry_msgs.msg import PoseStamped, TransformStamped, Twist
 from ground_robot_sim.geometry import normalize_angle, parse_circles
 from ground_robot_sim.geometry import ray_circle_distance, yaw_to_quaternion
+from ground_robot_sim.noise_utils import add_gaussian_noise, noisy_pose_2d, noisy_scan
 from nav_msgs.msg import Odometry
 import rclpy
 from rclpy.node import Node
@@ -38,6 +39,11 @@ class GroundRobotNode(Node):
         self.declare_parameter('scan_samples', 181)
         self.declare_parameter('world_half_size', 5.0)
         self.declare_parameter('obstacles', [2.0, 0.0, 0.45, -1.25, 1.2, 0.35, 0.5, -2.0, 0.5])
+        self.declare_parameter('odom_position_noise_stddev', 0.0)
+        self.declare_parameter('odom_yaw_noise_stddev', 0.0)
+        self.declare_parameter('odom_velocity_noise_stddev', 0.0)
+        self.declare_parameter('scan_range_noise_stddev', 0.0)
+        self.declare_parameter('publish_ground_truth', False)
 
         self.robot_name = self.get_parameter('robot_name').value
         frame_prefix = str(self.get_parameter('frame_prefix').value)
@@ -53,6 +59,15 @@ class GroundRobotNode(Node):
         self.scan_samples = max(3, int(self.get_parameter('scan_samples').value))
         self.world_half_size = float(self.get_parameter('world_half_size').value)
         self.obstacles = parse_circles(self.get_parameter('obstacles').value)
+        self.odom_position_noise_stddev = float(
+            self.get_parameter('odom_position_noise_stddev').value,
+        )
+        self.odom_yaw_noise_stddev = float(self.get_parameter('odom_yaw_noise_stddev').value)
+        self.odom_velocity_noise_stddev = float(
+            self.get_parameter('odom_velocity_noise_stddev').value,
+        )
+        self.scan_range_noise_stddev = float(self.get_parameter('scan_range_noise_stddev').value)
+        self.publish_ground_truth = bool(self.get_parameter('publish_ground_truth').value)
 
         self.x = float(self.get_parameter('initial_x').value)
         self.y = float(self.get_parameter('initial_y').value)
@@ -64,6 +79,11 @@ class GroundRobotNode(Node):
 
         self.odom_publisher = self.create_publisher(Odometry, 'odom', 10)
         self.scan_publisher = self.create_publisher(LaserScan, 'scan', 10)
+        self.ground_truth_publisher = None
+        if self.publish_ground_truth:
+            self.ground_truth_publisher = self.create_publisher(
+                PoseStamped, 'ground_truth_pose', 10,
+            )
         self.status_pub = self.create_publisher(RobotStatus, 'robot_status', 10)
         self.tf_broadcaster = TransformBroadcaster(self)
         self.create_subscription(Twist, 'cmd_vel', self.cmd_vel_callback, 10)
@@ -159,19 +179,43 @@ class GroundRobotNode(Node):
         quat_x, quat_y, quat_z, quat_w = yaw_to_quaternion(self.yaw)
         stamp = now.to_msg()
 
+        noisy_x, noisy_y, noisy_yaw = noisy_pose_2d(
+            self.x, self.y, self.yaw,
+            self.odom_position_noise_stddev, self.odom_yaw_noise_stddev,
+        )
+        noisy_quat_x, noisy_quat_y, noisy_quat_z, noisy_quat_w = yaw_to_quaternion(noisy_yaw)
+        noisy_linear_velocity = add_gaussian_noise(
+            self.linear_velocity, self.odom_velocity_noise_stddev,
+        )
+        noisy_angular_velocity = add_gaussian_noise(
+            self.angular_velocity, self.odom_velocity_noise_stddev,
+        )
+
         odom = Odometry()
         odom.header.stamp = stamp
         odom.header.frame_id = self.odom_frame
         odom.child_frame_id = self.base_frame
-        odom.pose.pose.position.x = self.x
-        odom.pose.pose.position.y = self.y
-        odom.pose.pose.orientation.x = quat_x
-        odom.pose.pose.orientation.y = quat_y
-        odom.pose.pose.orientation.z = quat_z
-        odom.pose.pose.orientation.w = quat_w
-        odom.twist.twist.linear.x = self.linear_velocity
-        odom.twist.twist.angular.z = self.angular_velocity
+        odom.pose.pose.position.x = noisy_x
+        odom.pose.pose.position.y = noisy_y
+        odom.pose.pose.orientation.x = noisy_quat_x
+        odom.pose.pose.orientation.y = noisy_quat_y
+        odom.pose.pose.orientation.z = noisy_quat_z
+        odom.pose.pose.orientation.w = noisy_quat_w
+        odom.twist.twist.linear.x = noisy_linear_velocity
+        odom.twist.twist.angular.z = noisy_angular_velocity
         self.odom_publisher.publish(odom)
+
+        if self.ground_truth_publisher is not None:
+            ground_truth = PoseStamped()
+            ground_truth.header.stamp = stamp
+            ground_truth.header.frame_id = self.odom_frame
+            ground_truth.pose.position.x = self.x
+            ground_truth.pose.position.y = self.y
+            ground_truth.pose.orientation.x = quat_x
+            ground_truth.pose.orientation.y = quat_y
+            ground_truth.pose.orientation.z = quat_z
+            ground_truth.pose.orientation.w = quat_w
+            self.ground_truth_publisher.publish(ground_truth)
 
         transform = TransformStamped()
         transform.header.stamp = stamp
@@ -207,10 +251,13 @@ class GroundRobotNode(Node):
         scan.scan_time = 1.0 / max(1.0, float(self.get_parameter('scan_rate').value))
         scan.range_min = self.range_min
         scan.range_max = self.range_max
-        scan.ranges = [
+        true_ranges = [
             self.cast_ray(scan.angle_min + i * scan.angle_increment)
             for i in range(self.scan_samples)
         ]
+        scan.ranges = noisy_scan(
+            true_ranges, self.scan_range_noise_stddev, self.range_min, self.range_max,
+        )
         self.scan_publisher.publish(scan)
 
     def cast_ray(self, relative_angle: float) -> float:

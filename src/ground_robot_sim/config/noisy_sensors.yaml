@@ -1,0 +1,13 @@
+ground_robot:
+  ros__parameters:
+    publish_rate: 30.0
+    scan_rate: 10.0
+    max_linear_speed: 0.8
+    max_angular_speed: 1.8
+    world_half_size: 5.0
+    obstacles: [2.0, 0.0, 0.45, -1.25, 1.2, 0.35, 0.5, -2.0, 0.5]
+    odom_position_noise_stddev: 0.03
+    odom_yaw_noise_stddev: 0.02
+    odom_velocity_noise_stddev: 0.05
+    scan_range_noise_stddev: 0.05
+    publish_ground_truth: true

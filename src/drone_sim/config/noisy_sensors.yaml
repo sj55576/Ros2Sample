@@ -1,0 +1,22 @@
+sim_drone:
+  ros__parameters:
+    frame_id: odom
+    base_frame_id: base_link
+    publish_rate_hz: 50.0
+    linear_accel_limit: 3.0
+    max_linear_speed: 4.0
+    position_kp: 1.4
+    odom_position_noise_stddev: 0.05
+    odom_velocity_noise_stddev: 0.02
+    imu_gyro_noise_stddev: 0.01
+    imu_accel_noise_stddev: 0.05
+    imu_gyro_bias: 0.005
+    publish_ground_truth: true
+waypoint_commander:
+  ros__parameters:
+    frame_id: odom
+    publish_rate_hz: 10.0
+    tolerance_m: 0.25
+    hold_time_sec: 1.0
+    loop: true
+    waypoints: [0.0, 0.0, 1.0, 2.0, 0.0, 1.5, 2.0, 2.0, 1.0, 0.0, 2.0, 1.2, 0.0, 0.0, 1.0]

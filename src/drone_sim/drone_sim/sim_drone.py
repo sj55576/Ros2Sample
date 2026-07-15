@@ -4,6 +4,7 @@ from math import atan2, hypot, isfinite
 from typing import Optional
 
 from drone_sim.math_utils import clamp, normalize_angle, quat_from_euler
+from drone_sim.noise_utils import noisy_imu, noisy_xyz
 from geometry_msgs.msg import PoseStamped, TransformStamped, Twist, Vector3
 from nav_msgs.msg import Odometry
 from rcl_interfaces.msg import SetParametersResult
@@ -23,7 +24,14 @@ _POSITIVE_PARAMS = (
     'cmd_timeout_sec',
     'setpoint_timeout_sec',
 )
-_NONNEGATIVE_PARAMS = ('position_kp', 'yaw_kp')
+_NONNEGATIVE_PARAMS = (
+    'position_kp',
+    'yaw_kp',
+    'odom_position_noise_stddev',
+    'odom_velocity_noise_stddev',
+    'imu_gyro_noise_stddev',
+    'imu_accel_noise_stddev',
+)
 
 
 class SimDrone(Node):
@@ -48,6 +56,12 @@ class SimDrone(Node):
         self.declare_parameter('initial_y', 0.0)
         self.declare_parameter('initial_z', 0.0)
         self.declare_parameter('initial_yaw', 0.0)
+        self.declare_parameter('odom_position_noise_stddev', 0.0)
+        self.declare_parameter('odom_velocity_noise_stddev', 0.0)
+        self.declare_parameter('imu_gyro_noise_stddev', 0.0)
+        self.declare_parameter('imu_accel_noise_stddev', 0.0)
+        self.declare_parameter('imu_gyro_bias', 0.0)
+        self.declare_parameter('publish_ground_truth', False)
 
         self.frame_id = self.get_parameter('frame_id').value
         self.base_frame_id = self.get_parameter('base_frame_id').value
@@ -60,6 +74,16 @@ class SimDrone(Node):
         self.setpoint_timeout_sec = float(self.get_parameter('setpoint_timeout_sec').value)
         self.position_kp = float(self.get_parameter('position_kp').value)
         self.yaw_kp = float(self.get_parameter('yaw_kp').value)
+        self.odom_position_noise_stddev = float(
+            self.get_parameter('odom_position_noise_stddev').value
+        )
+        self.odom_velocity_noise_stddev = float(
+            self.get_parameter('odom_velocity_noise_stddev').value
+        )
+        self.imu_gyro_noise_stddev = float(self.get_parameter('imu_gyro_noise_stddev').value)
+        self.imu_accel_noise_stddev = float(self.get_parameter('imu_accel_noise_stddev').value)
+        self.imu_gyro_bias = float(self.get_parameter('imu_gyro_bias').value)
+        self.publish_ground_truth = bool(self.get_parameter('publish_ground_truth').value)
 
         self.x = float(self.get_parameter('initial_x').value)
         self.y = float(self.get_parameter('initial_y').value)
@@ -86,6 +110,11 @@ class SimDrone(Node):
         self.odom_pub = self.create_publisher(Odometry, 'odom', 10)
         self.pose_pub = self.create_publisher(PoseStamped, 'pose', 10)
         self.imu_pub = self.create_publisher(Imu, 'imu', 10)
+        self.ground_truth_pub = None
+        if self.publish_ground_truth:
+            self.ground_truth_pub = self.create_publisher(
+                PoseStamped, 'ground_truth_pose', 10
+            )
         self.create_subscription(Twist, 'cmd_vel', self._on_cmd_vel, 10)
         self.create_subscription(PoseStamped, 'setpoint_pose', self._on_setpoint_pose, 10)
         self.create_subscription(Vector3, 'wind_velocity', self._on_wind, 10)
@@ -251,20 +280,27 @@ class SimDrone(Node):
     def _publish_state(self, stamp) -> None:
         quat = quat_from_euler(0.0, 0.0, self.yaw)
 
+        noisy_x, noisy_y, noisy_z = noisy_xyz(
+            self.x, self.y, self.z, self.odom_position_noise_stddev
+        )
+        noisy_vx, noisy_vy, noisy_vz = noisy_xyz(
+            self.vx, self.vy, self.vz, self.odom_velocity_noise_stddev
+        )
+
         odom = Odometry()
         odom.header.stamp = stamp.to_msg()
         odom.header.frame_id = self.frame_id
         odom.child_frame_id = self.base_frame_id
-        odom.pose.pose.position.x = self.x
-        odom.pose.pose.position.y = self.y
-        odom.pose.pose.position.z = self.z
+        odom.pose.pose.position.x = noisy_x
+        odom.pose.pose.position.y = noisy_y
+        odom.pose.pose.position.z = noisy_z
         odom.pose.pose.orientation.x = quat[0]
         odom.pose.pose.orientation.y = quat[1]
         odom.pose.pose.orientation.z = quat[2]
         odom.pose.pose.orientation.w = quat[3]
-        odom.twist.twist.linear.x = self.vx
-        odom.twist.twist.linear.y = self.vy
-        odom.twist.twist.linear.z = self.vz
+        odom.twist.twist.linear.x = noisy_vx
+        odom.twist.twist.linear.y = noisy_vy
+        odom.twist.twist.linear.z = noisy_vz
         odom.twist.twist.angular.z = self.yaw_rate
         self.odom_pub.publish(odom)
 
@@ -273,23 +309,49 @@ class SimDrone(Node):
         pose.pose = odom.pose.pose
         self.pose_pub.publish(pose)
 
+        noisy_ax, noisy_ay, noisy_az, noisy_gyro_z = noisy_imu(
+            self.last_ax,
+            self.last_ay,
+            self.last_az + 9.80665,
+            self.yaw_rate,
+            self.imu_accel_noise_stddev,
+            self.imu_gyro_noise_stddev,
+            self.imu_gyro_bias,
+        )
+
         imu = Imu()
         imu.header.stamp = odom.header.stamp
         imu.header.frame_id = self.base_frame_id
         imu.orientation = odom.pose.pose.orientation
-        imu.angular_velocity.z = self.yaw_rate
-        imu.linear_acceleration = Vector3(x=self.last_ax, y=self.last_ay, z=self.last_az + 9.80665)
+        imu.angular_velocity.z = noisy_gyro_z
+        imu.linear_acceleration = Vector3(x=noisy_ax, y=noisy_ay, z=noisy_az)
         self.imu_pub.publish(imu)
 
+        true_quat = quat
         transform = TransformStamped()
         transform.header = odom.header
         transform.child_frame_id = self.base_frame_id
         transform.transform.translation.x = self.x
         transform.transform.translation.y = self.y
         transform.transform.translation.z = self.z
-        transform.transform.rotation = odom.pose.pose.orientation
+        transform.transform.rotation.x = true_quat[0]
+        transform.transform.rotation.y = true_quat[1]
+        transform.transform.rotation.z = true_quat[2]
+        transform.transform.rotation.w = true_quat[3]
         self.tf_broadcaster.sendTransform(transform)
         self.status_pub.publish(self._build_status())
+
+        if self.ground_truth_pub is not None:
+            ground_truth = PoseStamped()
+            ground_truth.header = odom.header
+            ground_truth.pose.position.x = self.x
+            ground_truth.pose.position.y = self.y
+            ground_truth.pose.position.z = self.z
+            ground_truth.pose.orientation.x = true_quat[0]
+            ground_truth.pose.orientation.y = true_quat[1]
+            ground_truth.pose.orientation.z = true_quat[2]
+            ground_truth.pose.orientation.w = true_quat[3]
+            self.ground_truth_pub.publish(ground_truth)
 
 
 def main(args=None) -> None:

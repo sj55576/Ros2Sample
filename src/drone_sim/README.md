@@ -55,6 +55,23 @@ ros2 launch drone_sim swarm.launch.py drone_count:=3 spacing_m:=2.0 altitude_m:=
 
 Each drone runs under `/drone_N` with its own `odom`, `pose`, `imu`, `cmd_vel`, and `setpoint_pose` topics. TF child frames are named `drone_N/base_link` to avoid frame collisions.
 
+### Noisy sensors demo
+
+```bash
+ros2 launch drone_sim noisy_sensors_demo.launch.py
+```
+
+This starts `sim_drone` and `waypoint_commander` using `config/noisy_sensors.yaml`. `sim_drone`
+applies Gaussian noise to the published `odom` position and velocity and to the `imu` angular
+velocity and linear acceleration, while the internal simulated state stays exact and TF and
+`robot_status` continue to reflect the true pose. The noise is configured through `sim_drone`
+parameters: `odom_position_noise_stddev`, `odom_velocity_noise_stddev`,
+`imu_gyro_noise_stddev`, `imu_accel_noise_stddev`, and `imu_gyro_bias` (all default to `0.0`,
+so noise is off unless configured). Setting `publish_ground_truth: true` additionally publishes
+the true, noise-free pose on `ground_truth_pose` for comparison against the noisy `odom`/`pose`
+topics. `drone_sim/noise_utils.py` implements the pure noise-generation helpers and is covered
+by pytest unit tests, independent of ROS.
+
 ### Mission state machine demo
 
 ```bash

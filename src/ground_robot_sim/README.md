@@ -49,6 +49,14 @@ ros2 run ground_robot_sim ground_robot_node
 ros2 run ground_robot_sim lidar_obstacle_avoid
 ```
 
+Run a noisy-sensors demo. Odometry and lidar readings are perturbed with Gaussian noise while
+the internal state and TF stay exact, and the true pose is published on `ground_truth_pose` for
+comparison:
+
+```bash
+ros2 launch ground_robot_sim noisy_sensors_demo.launch.py
+```
+
 Run three robots in separate namespaces. Topics are under `/robot1`, `/robot2`, and `/robot3`; TF frames are prefixed the same way:
 
 ```bash
@@ -118,6 +126,15 @@ ros2 run ground_robot_sim teleop_keyboard --ros-args -r cmd_vel:=/robot_1/cmd_ve
 - `obstacles`: flat list of circular obstacles as `[x, y, radius, ...]`.
 - `world_half_size`: half-width of the square simulated room.
 - `scan_samples`, `scan_range_min`, `scan_range_max`: synthetic lidar behavior.
+- `odom_position_noise_stddev`, `odom_yaw_noise_stddev`, `odom_velocity_noise_stddev`: Gaussian
+  noise stddevs applied to the published `odom` pose and twist. Default `0.0` (no noise). The
+  internal true pose and the `tf` broadcast are never affected.
+- `scan_range_noise_stddev`: Gaussian noise stddev applied to each published `scan` range
+  reading, clamped to `[scan_range_min, scan_range_max]`. Default `0.0` (no noise). Non-finite
+  readings (out-of-range rays) are left unchanged.
+- `publish_ground_truth`: when `true`, also publish the exact pose on `ground_truth_pose`
+  (`geometry_msgs/PoseStamped`) at the odom publish rate, for comparing against the noisy
+  `odom` topic. Default `false`.
 
 ### waypoint_follower ノードのパラメータ
 

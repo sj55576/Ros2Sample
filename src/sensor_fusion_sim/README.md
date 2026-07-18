@@ -1,5 +1,8 @@
 # sensor_fusion_sim
 
+> [!WARNING]
+> 本パッケージは検証中であり、確実に動作確認したものではありません。詳細はリポジトリルートの README を参照してください。
+
 `sensor_fusion_sim` is a dependency-light ROS 2 Python/ament sample package for learning sensor fusion, lifecycle nodes, QoS profiles, and callback groups.
 
 The package contains four nodes:

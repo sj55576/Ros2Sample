@@ -1,5 +1,8 @@
 # ground_robot_sim
 
+> [!WARNING]
+> 本パッケージは検証中であり、確実に動作確認したものではありません。詳細はリポジトリルートの README を参照してください。
+
 `ground_robot_sim` is a dependency-light ROS 2 Python/ament sample package for a planar ground robot. It targets Ubuntu 24.04/26.04 with ROS 2 Jazzy, Kilted, or Rolling.
 
 The simulator node accepts `cmd_vel` and publishes:

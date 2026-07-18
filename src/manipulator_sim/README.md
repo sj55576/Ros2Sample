@@ -1,5 +1,8 @@
 # manipulator_sim
 
+> [!WARNING]
+> 本パッケージは検証中であり、確実に動作確認したものではありません。詳細はリポジトリルートの README を参照してください。
+
 `manipulator_sim` is a dependency-light ROS 2 Python/ament sample package for a 2-DOF planar manipulator.
 
 The simulator publishes:

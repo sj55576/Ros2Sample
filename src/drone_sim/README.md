@@ -1,5 +1,8 @@
 # drone_sim
 
+> [!WARNING]
+> 本パッケージは検証中であり、確実に動作確認したものではありません。詳細はリポジトリルートの README を参照してください。
+
 `drone_sim` is a dependency-light Python ament package with ROS 2 quadrotor simulation samples. It targets Ubuntu 24.04/26.04 and ROS 2 Jazzy, Kilted, and Rolling using only common client libraries and message packages.
 
 The simulator is intentionally kinematic rather than physics-heavy. It publishes `odom`, `pose`, `imu`, and TF for each drone, subscribes to `cmd_vel`, `wind_velocity`, geofence topics, and can also chase `setpoint_pose` goals.

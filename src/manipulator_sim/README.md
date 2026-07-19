@@ -42,6 +42,22 @@ ros2 topic echo /tool_pose
 ros2 topic echo /joint_target
 ```
 
+Run the inverse-kinematics target demo:
+
+```bash
+ros2 launch manipulator_sim ik_demo.launch.py
+```
+
+This starts `manipulator_simulator` and `ik_target_commander`. Unlike `target_commander`,
+which cycles through a fixed `targets_xy` list, `ik_target_commander` subscribes to a
+Cartesian `target_pose` (`geometry_msgs/PoseStamped`) and continuously solves inverse
+kinematics for the latest `(x, y)` target, publishing `joint_target` at `publish_rate_hz`.
+Publish a target manually to drive it:
+
+```bash
+ros2 topic pub /target_pose geometry_msgs/msg/PoseStamped "{pose: {position: {x: 0.9, y: 0.3}}}" --once
+```
+
 Run the MoveIt trajectory bridge demo:
 
 ```bash
@@ -62,3 +78,7 @@ for the simulator.
 - `elbow_up`: choose inverse-kinematics branch.
 - `input_topic`: trajectory topic consumed by `moveit_trajectory_bridge`.
 - `loop_trajectory`: replay an incoming planned trajectory repeatedly.
+- `clamp_to_workspace` (`ik_target_commander`): when `true`, an unreachable `target_pose`
+  is clamped to the nearest reachable point instead of being ignored.
+- `publish_rate_hz` (`ik_target_commander`): rate at which the latest IK solution is
+  republished on `joint_target`.

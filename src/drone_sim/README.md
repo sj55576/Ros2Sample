@@ -48,7 +48,7 @@ This starts `sim_drone`, `waypoint_commander`, `wind_disturbance`, `geofence_mon
 ros2 launch drone_sim formation_demo.launch.py
 ```
 
-This starts a `/leader` drone with a waypoint commander and two followers. Each follower runs `formation_controller`, subscribes to `/leader/odom`, and publishes namespaced `setpoint_pose` commands with configured offsets.
+This starts a `/leader` drone with a waypoint commander and two followers. Each follower runs `formation_controller`, subscribes to `/leader/odom`, and publishes namespaced `setpoint_pose` commands with configured offsets. `config/formation.yaml` captures the same per-namespace parameters as the launch file's inline values (useful as a `--params-file` reference if you drive the nodes by hand instead of the launch file).
 
 ### Small namespaced swarm
 
@@ -56,7 +56,7 @@ This starts a `/leader` drone with a waypoint commander and two followers. Each 
 ros2 launch drone_sim swarm.launch.py drone_count:=3 spacing_m:=2.0 altitude_m:=1.2
 ```
 
-Each drone runs under `/drone_N` with its own `odom`, `pose`, `imu`, `cmd_vel`, and `setpoint_pose` topics. TF child frames are named `drone_N/base_link` to avoid frame collisions.
+Each drone runs under `/drone_N` with its own `odom`, `pose`, `imu`, `cmd_vel`, and `setpoint_pose` topics. TF child frames are named `drone_N/base_link` to avoid frame collisions. `config/swarm.yaml` records the same `drone_count`/`spacing_m`/`altitude_m` values as this launch file's default arguments, but as plain top-level keys rather than a `ros__parameters` block for a real node name — it is not loadable via `--params-file` and is meant only as a human-readable reference for the launch argument defaults above.
 
 ### Noisy sensors demo
 
@@ -115,6 +115,44 @@ RTL branches preempt the mission branch in real time. See tutorial 11
 (`docs/tutorials/11_behavior_tree.md`) for a side-by-side comparison of the two
 implementations.
 
+### Collision avoidance demo
+
+```bash
+ros2 launch drone_sim collision_avoidance_demo.launch.py
+ros2 topic echo /drone_1/raw_setpoint_pose
+ros2 topic echo /drone_1/setpoint_pose
+```
+
+This starts three namespaced drones (`/drone_1`, `/drone_2`, `/drone_3`). `/drone_2` and
+`/drone_3` fly their own waypoint loops unmodified and act as moving traffic. `/drone_1`'s
+`waypoint_commander` is remapped to publish on `raw_setpoint_pose` instead of `setpoint_pose`,
+so the `collision_avoidance` node (loaded from `config/collision_avoidance.yaml`) can subscribe
+to it, nudge the goal away from the other two drones using a potential-field repulsion, and
+republish the adjusted goal on `setpoint_pose`, which `/drone_1`'s `sim_drone` then follows.
+Compare `/drone_1/raw_setpoint_pose` (raw target) against `/drone_1/setpoint_pose` (the
+adjusted goal `sim_drone` actually receives) to see the avoidance nudges in real time. Key parameters:
+`drone_odom_topics` (the full swarm to react to), `own_odom_topic` (which drone this instance
+protects), `safety_distance`/`influence_distance` (when repulsion starts and saturates), and
+`repulsion_gain`/`max_adjustment` (strength and clamp of the correction). The pure force
+computation lives in `drone_sim/collision_utils.py` and is covered by pytest unit tests,
+independent of ROS; `drone_sim/collision_avoidance.py` is thin ROS wiring around it (odom/
+setpoint subscriptions, a timer, and the adjusted-setpoint publisher) with no additional
+standalone logic to unit test.
+
+### Diagnostics publisher
+
+```bash
+ros2 run drone_sim diagnostics_publisher --ros-args -p robot_name:=drone_1 \
+  -r odom:=/drone_1/odom -r battery:=/drone_1/battery
+ros2 topic echo /diagnostics
+```
+
+`diagnostics_publisher` subscribes to `odom` and `battery` for a single drone and republishes a
+standardized `diagnostic_msgs/DiagnosticArray` on `/diagnostics`, with one `DiagnosticStatus`
+entry each for battery level, speed, and position. Status escalates from `OK` to `WARN`/`ERROR`
+based on the `battery_warn_pct`/`battery_error_pct` and `speed_warn_ms` parameters, and reports
+`STALE` until the first `odom`/`battery` message arrives.
+
 ## Dynamic parameters
 
 `altitude_hold`, `sim_drone`, and `geofence_monitor` support runtime parameter updates via
@@ -167,7 +205,15 @@ For a swarm drone, prefix topics with the namespace, for example `/drone_1/cmd_v
 - `drone_sim/battery_monitor.py` and `drone_sim/emergency_land.py` - battery drain and landing helpers.
 - `drone_sim/mission_logic.py` and `drone_sim/mission_state_machine.py` - pure mission
   transition rules and the ROS node that drives takeoff/mission/RTL/land.
-- `launch/*.launch.py` - single drone, altitude hold, battery, mission, wind/geofence/telemetry,
-  formation, and swarm launch files.
+- `drone_sim/bt_core.py` and `drone_sim/mission_bt.py` - minimal behavior-tree engine and the
+  mission tree built on it.
+- `drone_sim/mission_behavior_tree.py` - the ROS node that drives the mission using the
+  behavior tree instead of the FSM.
+- `drone_sim/collision_utils.py` and `drone_sim/collision_avoidance.py` - pure potential-field
+  repulsion math and the ROS node that applies it to a drone's setpoint.
+- `drone_sim/diagnostics_publisher.py` - aggregates odom/battery into a standardized
+  `diagnostic_msgs/DiagnosticArray`.
+- `launch/*.launch.py` - single drone, altitude hold, battery, mission, mission behavior tree,
+  wind/geofence/telemetry, formation, swarm, and collision avoidance launch files.
 - `config/*.yaml` - sample parameters.
 - `urdf/quadrotor.urdf` and `rviz/drone_sim.rviz` - visualization helpers.

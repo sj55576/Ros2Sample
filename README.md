@@ -16,8 +16,8 @@
 
 | OS | ROS 2 | 用途 | 備考 |
 | --- | --- | --- | --- |
-| Ubuntu 26.04 LTS | Lyrical Luth | 推奨・CI 対象 | 2026年5月リリースの新 LTS。サポート期間 2031年5月まで。 |
-| Ubuntu 24.04 LTS | Jazzy Jalisco | 安定版・CI 対象 | Lyrical でも Noble は 2029年まで引き続きサポートされます。 |
+| Ubuntu 26.04 LTS | Lyrical Luth | 推奨 | 2026年5月リリースの新 LTS。サポート期間 2031年5月まで。CI ではまだ検証していません。 |
+| Ubuntu 24.04 LTS | Jazzy Jalisco | 安定版・CI 対象 | 現時点で CI が実際に検証している唯一の組み合わせです。Lyrical でも Noble は 2029年まで引き続きサポートされます。 |
 | Ubuntu 20.04 LTS | Foxy Fitzroy | 互換対象 | EOL 済みのため新規採用は非推奨ですが、既存環境向けに軽量 Python サンプルのビルド・実行互換性を維持します。Gazebo/GZ 連携は対象外です。 |
 | Ubuntu 24.04 LTS | Kilted Kaiju | 開発候補 | パッケージ互換性を確認しながら利用してください。 |
 | Ubuntu 24.04 / 26.04 | Rolling Ridley | 最新 API 検証 | API 変更が頻繁に入るため、CI 失敗時は変更内容を確認してください。 |
@@ -26,7 +26,7 @@
 
 ```text
 .
-├── .github/workflows/ci.yml   # GitHub Actions: Foxy/Lyrical/Jazzy を matrix 化した colcon build/test
+├── .github/workflows/ci.yml   # GitHub Actions: Ubuntu 24.04/Jazzy 単一組み合わせの colcon build/test
 ├── docker/                    # Docker 開発環境
 ├── docs/                      # 補足ドキュメント
 ├── scripts/                   # 開発者向けヘルパースクリプト
@@ -45,6 +45,7 @@
 | `manipulator_sim` | 2自由度平面マニピュレータの JointState / TF / 目標姿勢追従を学ぶ軽量サンプル | `manipulator_simulator`, `target_commander` |
 | `sensor_fusion_sim` | ノイズ付きセンサー、相補フィルタによるセンサーフュージョン、ライフサイクルノードを学ぶ軽量サンプル。QoS プロファイル、コールバックグループ、動的パラメータ更新の実例を含む | `noisy_sensor_node`, `complementary_filter`, `lifecycle_data_recorder` |
 | `ros2_learning` | ROS 2 の基礎概念を段階的に学ぶチュートリアルパッケージ。Publisher/Subscriber、Service、Action、パラメータ、TF、ライフサイクルノードの最小構成サンプル | `minimal_publisher`, `minimal_subscriber`, `minimal_service_server`, `minimal_service_client`, `minimal_action_server`, `minimal_action_client`, `parameter_demo`, `tf_broadcaster_demo`, `tf_listener_demo`, `lifecycle_demo` |
+| `nav2_learning` | Navigation2 の概念を Nav2 を使わずに段階的に学ぶ学習パッケージ。OccupancyGrid マップ配信、A* 経路計画、Pure Pursuit 経路追従、Nav2 waypoint action クライアント、コストマップ監視、log-odds によるオンライン占有格子地図マッピング（SLAM入門）の軽量サンプル | `simple_map_publisher`, `simple_path_planner`, `simple_path_follower`, `nav2_waypoint_client`, `costmap_monitor`, `simple_occupancy_mapper` |
 | `sample_interfaces` | カスタム msg / srv / action 定義（ROS 2 インターフェース定義の学習用） | _(ライブラリパッケージ：実行ファイルなし)_ |
 
 検出結果は `colcon list` で確認できます。
@@ -58,6 +59,7 @@
 | [`ground_robot_sim`](src/ground_robot_sim/README.md) | 差動二輪ロボット、LiDAR 停止、ウェイポイント追従、障害物回避、複数ロボット namespace |
 | [`drone_sim`](src/drone_sim/README.md) | クアッドローター、waypoint 飛行、高度維持、バッテリー監視、小規模 swarm |
 | [`manipulator_sim`](src/manipulator_sim/README.md) | 2自由度平面マニピュレータ、JointState / TF / tool pose、目標姿勢追従 |
+| [`nav2_learning`](src/nav2_learning/README.md) | Navigation2 の概念（マップ、コストマップ、A* 経路計画、Pure Pursuit 経路追従、占有格子地図マッピング）を Nav2 なしで学ぶ学習パッケージ |
 | [`docs/simulation_spec.md`](docs/simulation_spec.md) | 全サンプル共通の観測ポイント、topic / service / action、代表デモの詳細仕様 |
 
 ## 依存関係
@@ -333,9 +335,11 @@ ROS_DISTRO=foxy UBUNTU_CODENAME=focal docker compose -f docker/compose.yml run -
 
 ## CI
 
-GitHub Actions は `.github/workflows/ci.yml` で定義しています。Ubuntu 20.04/Foxy、Ubuntu 24.04/Lyrical、Ubuntu 24.04/Jazzy の3組み合わせを `strategy.matrix` の `include` で1つのジョブ定義に統合しており、`fail-fast: false` のため、いずれかの組み合わせが失敗しても他の組み合わせの結果を確認できます。
+GitHub Actions は `.github/workflows/ci.yml` で定義しています。現在の `strategy.matrix` の `include` には Ubuntu 24.04/Jazzy の1組み合わせのみが登録されており、CI が実際に検証しているのはこの組み合わせだけです。`fail-fast: false` は設定していますが、今のところ matrix エントリが1つなので効果はありません。
 
-次のタイミングで自動的に実行されます（`src/**`、`scripts/**`、`ros2.repos`、`.github/workflows/**` に変更があった場合のみ）。
+「対象環境」に記載している Foxy・Kilted・Rolling（および CI 未実行の Lyrical）は、互換性維持や開発候補としての対象ではあるものの、CI では検証されていません。これらの組み合わせを CI に追加したい場合は `ci.yml` の `matrix.include` にエントリを追加してください。
+
+次のタイミングで自動的に実行されます（`src/**`、`scripts/**`、`docs/**`、`README.md`、`ros2.repos`、`.github/workflows/**` に変更があった場合のみ）。CI の先頭では `scripts/check_docs_consistency.py` により、パッケージ実態と README・仕様書の整合性チェックも行います。
 
 - `main` ブランチへの `push`
 - Pull Request（対象ブランチを問わず）

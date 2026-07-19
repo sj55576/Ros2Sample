@@ -5,6 +5,8 @@ on:
     paths:
       - "src/**"
       - "scripts/**"
+      - "docs/**"
+      - "README.md"
       - "ros2.repos"
       - ".github/workflows/**"
   push:
@@ -12,6 +14,8 @@ on:
     paths:
       - "src/**"
       - "scripts/**"
+      - "docs/**"
+      - "README.md"
       - "ros2.repos"
       - ".github/workflows/**"
   workflow_dispatch:
@@ -37,6 +41,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Check docs consistency
+        run: python3 scripts/check_docs_consistency.py
 
       - name: Set up ROS 2 apt repository
         uses: ros-tooling/setup-ros@v0.7

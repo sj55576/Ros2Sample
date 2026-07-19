@@ -1,4 +1,4 @@
-collision_avoidance:
+/**/collision_avoidance:
   ros__parameters:
     drone_odom_topics:
       - /drone_1/odom

@@ -28,6 +28,16 @@ Run an open-loop square patrol:
 ros2 launch ground_robot_sim diff_drive_patrol.launch.py
 ```
 
+`config/patrol.yaml` collects the `ground_robot`, `diff_drive_patrol`, and
+`lidar_obstacle_stop` parameters used across these demos into a single file.
+The launch files above pass parameters inline, but you can apply the same
+file directly when running nodes standalone:
+
+```bash
+ros2 run ground_robot_sim ground_robot_node --ros-args --params-file src/ground_robot_sim/config/patrol.yaml
+ros2 run ground_robot_sim diff_drive_patrol --ros-args --params-file src/ground_robot_sim/config/patrol.yaml
+```
+
 Run a lidar obstacle stop demo. The robot moves forward until the front scan sector sees an obstacle inside the stop distance:
 
 ```bash
@@ -41,6 +51,32 @@ ros2 launch ground_robot_sim waypoint_follower.launch.py
 # または個別ノードを起動する場合
 ros2 run ground_robot_sim ground_robot_node
 ros2 run ground_robot_sim waypoint_follower
+```
+
+Run the waypoint-navigation action server demo. The robot accepts `NavigateWaypoints`
+action goals and drives through the requested waypoints using the same PID controller
+as `waypoint_follower`, reporting progress via action feedback:
+
+```bash
+ros2 launch ground_robot_sim navigate_waypoints.launch.py
+# または個別ノードを起動する場合
+ros2 run ground_robot_sim ground_robot_node
+ros2 run ground_robot_sim navigate_waypoints_server
+```
+
+Send a goal from another terminal:
+
+```bash
+ros2 action send_goal /navigate_waypoints sample_interfaces/action/NavigateWaypoints \
+  "{waypoints: [{pose: {position: {x: 1.0, y: 0.0}}}, {pose: {position: {x: 1.0, y: 1.0}}}], loop: false, tolerance_m: 0.15}" \
+  --feedback
+```
+
+Observe progress on `/odom`, `/scan`, and the action feedback/result printed by
+`ros2 action send_goal`:
+
+```bash
+ros2 topic echo /odom
 ```
 
 Run a lidar obstacle avoidance demo. The robot steers away from obstacles instead of only stopping — forward speed is scaled down as obstacles approach and the robot rotates away from the nearer side:
@@ -122,6 +158,20 @@ ros2 run ground_robot_sim teleop_keyboard --ros-args -r cmd_vel:=/drone_1/cmd_ve
 ros2 run ground_robot_sim teleop_keyboard --ros-args -r cmd_vel:=/robot_1/cmd_vel
 ```
 
+### Diagnostics publisher
+
+`diagnostics_publisher` subscribes to `odom` and `scan` and republishes robot health as a
+standard `diagnostic_msgs/DiagnosticArray` on `/diagnostics`, with one status per
+`proximity`, `motion`, and `position` check (`OK`/`WARN`/`STALE`):
+
+```bash
+ros2 run ground_robot_sim ground_robot_node
+ros2 run ground_robot_sim diagnostics_publisher
+ros2 topic echo /diagnostics
+```
+
+See "diagnostics_publisher ノードのパラメータ" below for the key parameters.
+
 ## Useful parameters
 
 - `initial_x`, `initial_y`, `initial_yaw`: starting pose in the square world.
@@ -156,6 +206,22 @@ ros2 run ground_robot_sim teleop_keyboard --ros-args -r cmd_vel:=/robot_1/cmd_ve
 - `stop_distance`: この距離以下で完全停止し回転する距離（メートル）。デフォルト `0.45`。
 - `turn_speed`: 回避時の旋回角速度（rad/s）。デフォルト `0.8`。
 - `front_angle_degrees`: 前方センサー扇形の全角（度）。デフォルト `70.0`。
+
+### diagnostics_publisher ノードのパラメータ
+
+- `robot_name`: 各診断ステータス名に付与するプレフィックス。デフォルト `ground_robot`。
+- `publish_rate_hz`: `/diagnostics` の発行レート（Hz）。デフォルト `1.0`。
+- `min_scan_warn_m`: この距離未満で proximity ステータスが `WARN` になる、最近傍スキャン距離のしきい値。デフォルト `0.3`。
+- `speed_warn_ms`: この速度を超えると motion ステータスが `WARN` になる、並進速度のしきい値（m/s）。デフォルト `0.7`。
+
+### navigate_waypoints_server ノードのパラメータ
+
+`navigate_waypoints_server` は `waypoint_follower` と同じ PID 制御ロジックを使用し、
+`max_linear_speed` / `max_angular_speed` / `kp_linear` / `ki_linear` / `kd_linear` /
+`kp_angular` / `ki_angular` / `kd_angular` / `heading_gate_rad` / `control_rate_hz` を
+ノードパラメータとして受け付けます（デフォルト値は `waypoint_follower` と同じ）。
+目標地点・ループ有無・到着判定距離は、ノードパラメータではなく `NavigateWaypoints`
+アクションゴールのフィールド（`waypoints` / `loop` / `tolerance_m`）として指定します。
 
 ## Dynamic parameters
 

@@ -13,7 +13,8 @@
 | `ground_robot_sim` | 差動二輪風の地上ロボット、LiDAR 風スキャン、ウェイポイント追従、障害物停止・回避、複数ロボット namespace | 2D 平面移動ロボット |
 | `drone_sim` | クアッドローター風の運動、3D waypoint、PID 高度維持、風外乱、ジオフェンス、フォーメーション制御、テレメトリ、バッテリー消費、緊急着陸、swarm namespace | 3D 空間内の簡易ドローン |
 | `manipulator_sim` | 2 自由度平面マニピュレータ、関節追従、順運動学、逆運動学、TF | 2 リンク平面アーム |
-| `sensor_fusion_sim` | ノイズ付きセンサー、相補フィルタ、ライフサイクルノード、QoS、コールバックグループ | センサーフュージョン |
+| `sensor_fusion_sim` | ノイズ付きセンサー、相補フィルタ、EKF によるセンサーフュージョン、ライフサイクルノード、QoS、コールバックグループ | センサーフュージョン |
+| `nav2_learning` | OccupancyGrid マップ配信、A* 経路計画、Pure Pursuit 経路追従、Nav2 waypoint action クライアント、コストマップ監視、log-odds 占有格子地図マッピング | Navigation2 の概念（Nav2 なし） |
 | `sample_interfaces` | サンプル共通の msg / srv / action 定義 | 状態取得と waypoint action |
 
 ### 1.2 設計方針
@@ -52,7 +53,7 @@
 
 ### 2.3 センサーフュージョン
 
-センサーフュージョンは、ノイズを含むセンサーデータから推定状態を復元する過程を学ぶためのデモです。`noisy_sensor_node` が円軌道の真値に GPS・IMU・wheel odom のノイズを加えて publish し、`complementary_filter` がそれらを相補フィルタで融合して `fused_odom` を出力します。`lifecycle_data_recorder` はライフサイクル管理されたノードで、activate 状態の間だけ `fused_odom` をバッファに記録します。
+センサーフュージョンは、ノイズを含むセンサーデータから推定状態を復元する過程を学ぶためのデモです。`noisy_sensor_node` が円軌道の真値に GPS・IMU・wheel odom のノイズを加えて publish し、`complementary_filter` がそれらを相補フィルタで融合して `fused_odom` を出力します。同じセンサー入力に対して、`ekf_node` は状態 `[x, y, yaw, v, yaw_rate]` の Extended Kalman Filter で融合し、共分散付きの `ekf_odom` と `ekf_diagnostics`（`trace(P)` を含む）を出力します。両ノードは並行に起動でき、`ground_truth` と比較して相補フィルタと EKF の推定精度を見比べられます。`lifecycle_data_recorder` はライフサイクル管理されたノードで、activate 状態の間だけ `fused_odom` をバッファに記録します。
 
 - `sensor_fusion_demo.launch.py`: 3 ノードを同時起動し、レコーダーを自動で configure → activate へ遷移させます。
 
@@ -60,7 +61,7 @@
 
 - **QoS プロファイル**: GPS / wheel odom は RELIABLE、IMU は BEST_EFFORT の QoS を使い分けます。
 - **コールバックグループ**: センサー入力に `ReentrantCallbackGroup`、publish に `MutuallyExclusiveCallbackGroup` を使い、`MultiThreadedExecutor` で並行処理します。
-- **動的パラメータ更新**: `gps_alpha`、`odom_alpha`、`imu_yaw_weight` を実行中に `ros2 param set` で変更できます。
+- **動的パラメータ更新**: `gps_alpha`、`odom_alpha`、`imu_yaw_weight`（`complementary_filter`）や `gps_pos_stddev`、`process_yaw_rate_stddev`、`use_imu_orientation`（`ekf_node`）を実行中に `ros2 param set` で変更できます。
 - **ライフサイクルノード**: レコーダーが `unconfigured → inactive → active` の状態遷移を持ち、launch から自動駆動されます。
 
 ### 2.4 マニピュレータ
@@ -276,7 +277,33 @@
 | `imu_yaw_weight` | `0.05` | IMU yaw ブレンド重み |
 | `publish_rate_hz` | `20.0` | フュージョン結果の発行周期 [Hz] |
 
-### 7.3 `lifecycle_data_recorder`
+### 7.3 `ekf_node`
+
+| 項目 | 仕様 |
+| --- | --- |
+| ノード名 | `ekf_node` |
+| 入力 topic | `gps` (RELIABLE)、`imu` (BEST_EFFORT)、`wheel_odom` (RELIABLE) |
+| 出力 topic | `ekf_odom` (`Odometry`, RELIABLE。`pose.covariance` / `twist.covariance` を格納)、`ekf_diagnostics` (`String`) |
+| 状態ベクトル | `[x, y, yaw, v, yaw_rate]` の Extended Kalman Filter |
+| フュージョン | GPS/wheel odom の位置、wheel odom の速度、IMU ジャイロ（および任意で IMU 姿勢由来の yaw）を EKF の観測更新として取り込む |
+| コールバックグループ | センサー: `ReentrantCallbackGroup`、publish timer: `MutuallyExclusiveCallbackGroup` |
+| Executor | `MultiThreadedExecutor` (4 スレッド) |
+| 動的パラメータ | プロセス/観測ノイズの標準偏差、`use_imu_orientation` などを実行中に変更可能（標準偏差は `> 0` のバリデーション付き） |
+
+主なパラメータは次の通りです。
+
+| パラメータ | 既定値 | 説明 |
+| --- | --- | --- |
+| `publish_rate_hz` | `20.0` | `ekf_odom` / `ekf_diagnostics` の発行周期 [Hz] |
+| `frame_id` / `child_frame_id` | `world` / `base_link_ekf` | 出力 `Odometry` の frame |
+| `use_imu_orientation` | `true` | ジャイロ角速度に加えて IMU 姿勢由来の yaw も観測更新に使う |
+| `process_pos_stddev` / `process_yaw_stddev` / `process_vel_stddev` / `process_yaw_rate_stddev` | `0.01` / `0.01` / `0.1` / `0.05` | プロセスノイズ `Q` の標準偏差 |
+| `gps_pos_stddev` | `0.5` | GPS 位置観測ノイズの標準偏差 |
+| `odom_pos_stddev` / `odom_vel_stddev` | `0.05` / `0.1` | wheel odom 位置・速度観測ノイズの標準偏差 |
+| `imu_gyro_stddev` / `imu_yaw_stddev` | `0.02` / `0.01` | IMU ジャイロ・yaw 観測ノイズの標準偏差 |
+| `init_pos_stddev` / `init_yaw_stddev` / `init_vel_stddev` / `init_yaw_rate_stddev` | `1.0` / `0.5` / `0.5` / `0.1` | 初期共分散 `P0` の標準偏差 |
+
+### 7.4 `lifecycle_data_recorder`
 
 | 項目 | 仕様 |
 | --- | --- |
@@ -295,15 +322,39 @@
 | `publish_rate_hz` | `1.0` | ステータス発行周期 [Hz] |
 | `input_topic` | `fused_odom` | 入力 topic 名 |
 
-### 7.4 センサーフュージョン launch シナリオ
+### 7.5 センサーフュージョン launch シナリオ
 
 | launch | 主な起動ノード | シナリオ |
 | --- | --- | --- |
-| `sensor_fusion_demo.launch.py` | `noisy_sensor_node`、`complementary_filter`、`lifecycle_data_recorder` | ノイズ付きセンサーから相補フィルタでフュージョンし、ライフサイクルレコーダーで記録。レコーダーは自動 configure → activate される |
+| `sensor_fusion_demo.launch.py` | `noisy_sensor_node`、`complementary_filter`、`ekf_node`、`lifecycle_data_recorder` | ノイズ付きセンサーから相補フィルタと EKF の双方でフュージョンし、ライフサイクルレコーダーで記録。レコーダーは自動 configure → activate される |
 
-## 8. 実行・観測手順
+## 8. nav2_learning 仕様
 
-### 8.1 ビルド
+`nav2_learning` は Nav2 スタックそのものを使わずに、マップ・コストマップ・経路計画・経路追従といった Navigation2 の中心概念を軽量な独自実装で学ぶパッケージです。ノードごとの詳細なパラメータや処理の流れは [`src/nav2_learning/README.md`](../src/nav2_learning/README.md) を参照してください。
+
+### 8.1 ノード一覧
+
+| ノード | 入出力 | 内容 |
+| --- | --- | --- |
+| `simple_map_publisher` | 出力: `map` (`OccupancyGrid`、Latched QoS) | 静的マップの生成・配信。RViz の「Publish Point」で動的障害物を追加可能 |
+| `simple_path_planner` | 入力: `map`。出力: `plan` / `plan_raw` (`Path`) | A* による経路計画。ショートカット・移動平均平滑化・マップ更新時の自動リプランに対応 |
+| `simple_path_follower` | 入力: `plan`、`odom`。出力: `cmd_vel` | Pure Pursuit による経路追従制御 |
+| `nav2_waypoint_client` | 出力: Nav2 `NavigateToPose` action goal | 実際の Nav2 スタックに対する waypoint action クライアント |
+| `costmap_monitor` | 入力: コストマップ topic | コストマップデータの観察・解析 |
+| `simple_occupancy_mapper` | 入力: `scan`、`odom`。出力: `map` (`OccupancyGrid`) | log-odds 方式のオンライン占有格子地図マッピング（SLAM のマッピング部分のみ） |
+
+### 8.2 launch シナリオ
+
+| launch | 主な起動ノード | シナリオ |
+| --- | --- | --- |
+| `simple_map_demo.launch.py` | `simple_map_publisher` | 静的マップの生成・配信 |
+| `simple_planning_demo.launch.py` | `simple_map_publisher`、`simple_path_planner`、`simple_path_follower`、`ground_robot_sim` | A* 経路計画と Pure Pursuit 追従、動的障害物によるリプラン |
+| `nav2_waypoint_demo.launch.py` | `nav2_waypoint_client` | 別途起動した Nav2 スタックへの waypoint action 送信 |
+| `occupancy_mapping_demo.launch.py` | `simple_occupancy_mapper`、`ground_robot_sim` | 走行しながらの占有格子地図構築（SLAM入門） |
+
+## 9. 実行・観測手順
+
+### 9.1 ビルド
 
 ```bash
 source /opt/ros/<rosdistro>/setup.bash
@@ -311,7 +362,7 @@ colcon build --symlink-install
 source install/setup.bash
 ```
 
-### 8.2 代表デモの起動
+### 9.2 代表デモの起動
 
 ```bash
 # 地上ロボット
@@ -332,9 +383,13 @@ ros2 launch manipulator_sim planar_reach_demo.launch.py
 
 # センサーフュージョン
 ros2 launch sensor_fusion_sim sensor_fusion_demo.launch.py
+
+# Navigation2 学習パッケージ
+ros2 launch nav2_learning simple_planning_demo.launch.py
+ros2 launch nav2_learning occupancy_mapping_demo.launch.py
 ```
 
-### 8.3 topic / service の確認例
+### 9.3 topic / service の確認例
 
 ```bash
 ros2 topic list
@@ -346,7 +401,11 @@ ros2 topic echo /geofence_breach
 ros2 topic echo /telemetry_summary
 ros2 topic echo /fused_odom
 ros2 topic echo /filter_diagnostics
+ros2 topic echo /ekf_odom
+ros2 topic echo /ekf_diagnostics
 ros2 topic echo /recording_status
+ros2 topic echo /map
+ros2 topic echo /plan
 ros2 service call /get_robot_status sample_interfaces/srv/GetRobotStatus
 ros2 service call /emergency_stop std_srvs/srv/Trigger
 ros2 service call /reset_emergency std_srvs/srv/Trigger
@@ -360,7 +419,7 @@ ros2 topic echo /drone_1/pose
 ros2 service call /drone_1/get_robot_status sample_interfaces/srv/GetRobotStatus
 ```
 
-## 9. 仕様変更時の更新ポイント
+## 10. 仕様変更時の更新ポイント
 
 - 新しいノード、topic、service、action を追加したら、この文書の該当表を更新してください。
 - launch ファイルや config YAML の既定値を変更した場合は、シナリオ表とパラメータ表を更新してください。

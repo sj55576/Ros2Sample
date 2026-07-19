@@ -47,9 +47,11 @@ flowchart LR
 
   subgraph Fusion["sensor_fusion_sim"]
     NS["noisy_sensor_node"] -->|gps / imu / wheel_odom| CF["complementary_filter"]
+    NS -->|gps / imu / wheel_odom| EK["ekf_node"]
     CF -->|fused_odom| LR["lifecycle_data_recorder"]
     NS --> FOUT["ground_truth / TF"]
     CF --> FOUT2["fused_odom / filter_diagnostics"]
+    EK --> FOUT3["ekf_odom / ekf_diagnostics"]
     LR --> LOUT["recording_status / recording_summary"]
   end
 ```
@@ -227,6 +229,7 @@ y = l1 sin(theta1) + l2 sin(theta1 + theta2)
 | --- | --- | --- | --- |
 | `noisy_sensor_node` | なし | `gps: PointStamped` (RELIABLE, 1 Hz), `imu: Imu` (BEST_EFFORT, 50 Hz), `wheel_odom: Odometry` (RELIABLE, 10 Hz), `ground_truth: Odometry` (RELIABLE, 10 Hz), TF | 円軌道にノイズを加えたセンサーデータ生成 |
 | `complementary_filter` | `gps` (RELIABLE), `imu` (BEST_EFFORT), `wheel_odom` (RELIABLE) | `fused_odom: Odometry`, `filter_diagnostics: String` | GPS / IMU / odom の相補フィルタ融合 |
+| `ekf_node` | `gps` (RELIABLE), `imu` (BEST_EFFORT), `wheel_odom` (RELIABLE) | `ekf_odom: Odometry` (pose/twist covariance 付き), `ekf_diagnostics: String` | GPS / IMU / odom の Extended Kalman Filter 融合 |
 | `lifecycle_data_recorder` | `fused_odom: Odometry` (activate 時) | `recording_status: String`, `recording_summary: String` (JSON) | ライフサイクル管理のデータ記録 |
 
 ### 7.2 ノイズモデル
@@ -247,7 +250,31 @@ IMU 受信時: yaw を `imu_yaw_weight` でブレンド
 
 `gps_alpha`、`odom_alpha`、`imu_yaw_weight` は実行中に `ros2 param set` で動的に変更可能です。値は `[0, 1]` にバリデーションされます。スレッドセーフは `threading.Lock` で保証します。
 
-### 7.4 ライフサイクルとコールバックグループ
+### 7.4 Extended Kalman Filter (`ekf_node`)
+
+`ekf_node` は状態 `x = [x, y, yaw, v, yaw_rate]` の EKF で GPS / IMU / wheel odom を融合します（`sensor_fusion_sim/ekf_math.py`）。
+
+予測ステップは等速度・等角速度（unicycle）モデルで状態を進め、ヤコビアン `F` で共分散を伝播します。
+
+```text
+x(k+1)   = x(k) + v cos(yaw) dt
+y(k+1)   = y(k) + v sin(yaw) dt
+yaw(k+1) = normalize(yaw(k) + yaw_rate dt)
+P(k+1)   = F P(k) F^T + Q
+```
+
+観測更新は線形の観測モデル `z = H x` を使う標準的な EKF 更新（イノベーション `y = z - H x`、カルマンゲイン `K = P H^T S^-1`、`S = H P H^T + R`）です。
+
+| センサー | 観測 `z` | 更新する状態 |
+| --- | --- | --- |
+| `gps` | `[x, y]` | 位置 |
+| `wheel_odom` | `[x, y, v]` | 位置と速度 |
+| `imu`（ジャイロ） | `[yaw_rate]` | 角速度 |
+| `imu`（姿勢、`use_imu_orientation=true` のとき） | `[yaw]` | 方位（イノベーションは角度として `[-pi, pi]` に正規化） |
+
+プロセスノイズ `Q` と各観測ノイズ `R` は対角共分散で、`process_*_stddev` / `gps_pos_stddev` / `odom_*_stddev` / `imu_*_stddev` の2乗から構成します。初期共分散 `P0` も対角で `init_*_stddev` から構成します。これらの標準偏差パラメータは実行中に `ros2 param set` で動的に変更可能（`> 0` にバリデーション）で、変更時に対応する `Q` / `R` を再構築します。`ekf_odom` は `P` の該当要素を `pose.covariance` / `twist.covariance`（36 要素の row-major 6x6）に埋め込み、`ekf_diagnostics` は `trace(P)` を含む文字列を publish します。スレッドセーフは `threading.Lock` で保証します。
+
+### 7.5 ライフサイクルとコールバックグループ
 
 `lifecycle_data_recorder` は `LifecycleNode` を継承します。
 
@@ -258,14 +285,15 @@ IMU 受信時: yaw を `imu_yaw_weight` でブレンド
 
 バッファは `max_buffer_size` 件まで保持し、超過分は先頭から削除します。
 
-`complementary_filter` はセンサーコールバックに `ReentrantCallbackGroup`、publish タイマーに `MutuallyExclusiveCallbackGroup` を使い、`MultiThreadedExecutor(num_threads=4)` で実行します。
+`complementary_filter` と `ekf_node` はいずれもセンサーコールバックに `ReentrantCallbackGroup`、publish タイマーに `MutuallyExclusiveCallbackGroup` を使い、`MultiThreadedExecutor(num_threads=4)` で実行します。
 
-### 7.5 parameter
+### 7.6 parameter
 
 | ノード | parameter default |
 | --- | --- |
 | `noisy_sensor_node` | `circle_radius=5.0`, `circle_omega=0.3`, `gps_rate_hz=1`, `gps_noise_stddev=0.5`, `imu_rate_hz=50`, `imu_accel_stddev=0.1`, `imu_gyro_stddev=0.02`, `odom_rate_hz=10`, `odom_noise_stddev=0.05` |
 | `complementary_filter` | `gps_alpha=0.15`, `odom_alpha=0.30`, `imu_yaw_weight=0.05`, `publish_rate_hz=20` |
+| `ekf_node` | `publish_rate_hz=20`, `frame_id=world`, `child_frame_id=base_link_ekf`, `use_imu_orientation=true`, `process_pos_stddev=0.01`, `process_yaw_stddev=0.01`, `process_vel_stddev=0.1`, `process_yaw_rate_stddev=0.05`, `gps_pos_stddev=0.5`, `odom_pos_stddev=0.05`, `odom_vel_stddev=0.1`, `imu_gyro_stddev=0.02`, `imu_yaw_stddev=0.01`, `init_pos_stddev=1.0`, `init_yaw_stddev=0.5`, `init_vel_stddev=0.5`, `init_yaw_rate_stddev=0.1` |
 | `lifecycle_data_recorder` | `max_buffer_size=500`, `publish_rate_hz=1.0`, `input_topic=fused_odom` |
 
 ## 8. namespace と TF
@@ -337,12 +365,14 @@ ros2 run tf2_ros tf2_echo base_link tool0
 ```bash
 ros2 launch sensor_fusion_sim sensor_fusion_demo.launch.py
 ros2 topic echo /fused_odom --once
+ros2 topic echo /ekf_odom --once
 ros2 topic echo /ground_truth --once
 ros2 topic echo /recording_status --once
 ros2 topic echo /filter_diagnostics --once
+ros2 topic echo /ekf_diagnostics --once
 ```
 
-期待結果: `fused_odom` が約 20 Hz で発行され、`ground_truth` との比較でフィルタの効果を確認できる。`recording_status` が `active` で記録中であること。
+期待結果: `fused_odom` と `ekf_odom` がいずれも約 20 Hz で発行され、`ground_truth` との比較でそれぞれのフィルタの効果を確認できる。`ekf_odom` の `pose.covariance` / `twist.covariance` が非ゼロであること。`recording_status` が `active` で記録中であること。
 
 ## 11. 変更時チェックリスト
 

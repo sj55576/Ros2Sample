@@ -39,7 +39,8 @@ def noisy_scan(
     range_max: float,
     rng: random.Random = None,
 ) -> List[float]:
-    """Return ranges with per-sample Gaussian noise clamped to [range_min, range_max].
+    """
+    Return ranges with per-sample Gaussian noise clamped to [range_min, range_max].
 
     Non-finite readings (inf/nan) pass through unchanged, and the list is
     returned unmodified in value when stddev <= 0.

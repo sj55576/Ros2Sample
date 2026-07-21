@@ -1,15 +1,14 @@
 """Record nav_msgs/Odometry poses as time-sampled OpenUSD transforms."""
 
 from nav_msgs.msg import Odometry
-import rclpy
-from rclpy.node import Node
-
 from openusd_bridge.sampling import (
     normalized_quaternion,
     relative_time_code,
     stamp_to_seconds,
 )
 from openusd_bridge.usd_stage import RobotPoseStage
+import rclpy
+from rclpy.node import Node
 
 
 class OdomToUsd(Node):

@@ -1,0 +1,7 @@
+odom_to_usd:
+  ros__parameters:
+    input_topic: odom
+    output_path: /tmp/ros2_openusd/robot_motion.usda
+    robot_prim_path: /World/Robot
+    time_codes_per_second: 30.0
+    save_every_n_samples: 30

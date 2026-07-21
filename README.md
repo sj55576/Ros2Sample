@@ -46,6 +46,7 @@
 | `sensor_fusion_sim` | ノイズ付きセンサー、相補フィルタによるセンサーフュージョン、ライフサイクルノードを学ぶ軽量サンプル。QoS プロファイル、コールバックグループ、動的パラメータ更新の実例を含む | `noisy_sensor_node`, `complementary_filter`, `lifecycle_data_recorder` |
 | `ros2_learning` | ROS 2 の基礎概念を段階的に学ぶチュートリアルパッケージ。Publisher/Subscriber、Service、Action、パラメータ、TF、ライフサイクルノードの最小構成サンプル | `minimal_publisher`, `minimal_subscriber`, `minimal_service_server`, `minimal_service_client`, `minimal_action_server`, `minimal_action_client`, `parameter_demo`, `tf_broadcaster_demo`, `tf_listener_demo`, `lifecycle_demo` |
 | `nav2_learning` | Navigation2 の概念を Nav2 を使わずに段階的に学ぶ学習パッケージ。OccupancyGrid マップ配信、A* 経路計画、Pure Pursuit 経路追従、Nav2 waypoint action クライアント、コストマップ監視、log-odds によるオンライン占有格子地図マッピング（SLAM入門）の軽量サンプル | `simple_map_publisher`, `simple_path_planner`, `simple_path_follower`, `nav2_waypoint_client`, `costmap_monitor`, `simple_occupancy_mapper` |
+| `openusd_bridge` | `Odometry` の位置・姿勢を OpenUSD stage の時系列 `Xform` として保存するオプション連携サンプル | `odom_to_usd` |
 | `sample_interfaces` | カスタム msg / srv / action 定義（ROS 2 インターフェース定義の学習用） | _(ライブラリパッケージ：実行ファイルなし)_ |
 
 検出結果は `colcon list` で確認できます。
@@ -60,6 +61,7 @@
 | [`drone_sim`](src/drone_sim/README.md) | クアッドローター、waypoint 飛行、高度維持、バッテリー監視、小規模 swarm |
 | [`manipulator_sim`](src/manipulator_sim/README.md) | 2自由度平面マニピュレータ、JointState / TF / tool pose、目標姿勢追従 |
 | [`nav2_learning`](src/nav2_learning/README.md) | Navigation2 の概念（マップ、コストマップ、A* 経路計画、Pure Pursuit 経路追従、占有格子地図マッピング）を Nav2 なしで学ぶ学習パッケージ |
+| [`openusd_bridge`](src/openusd_bridge/README.md) | ROS 2 の odometry を OpenUSD の時系列 transform へ記録するサンプル |
 | [`docs/simulation_spec.md`](docs/simulation_spec.md) | 全サンプル共通の観測ポイント、topic / service / action、代表デモの詳細仕様 |
 
 ## 依存関係
@@ -246,6 +248,9 @@ ros2 launch manipulator_sim planar_reach_demo.launch.py
 
 # センサーフュージョン: ノイズ付きセンサー + 相補フィルタ + ライフサイクルレコーダー
 ros2 launch sensor_fusion_sim sensor_fusion_demo.launch.py
+
+# OpenUSD: 地上ロボット odometry を USD stage へ記録（別途 pxr が必要）
+ros2 launch openusd_bridge ground_robot_openusd.launch.py
 
 # チュートリアル: Publisher/Subscriber デモ
 ros2 launch ros2_learning pubsub_demo.launch.py

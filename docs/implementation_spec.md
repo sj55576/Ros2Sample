@@ -54,6 +54,11 @@ flowchart LR
     EK --> FOUT3["ekf_odom / ekf_diagnostics"]
     LR --> LOUT["recording_status / recording_summary"]
   end
+
+  subgraph USD["openusd_bridge"]
+    ODOM["Odometry publisher"] -->|odom| REC["odom_to_usd"]
+    REC -->|time-sampled Xform| STAGE["OpenUSD stage"]
+  end
 ```
 
 複数ノードが同じ `cmd_vel` に publish する構成では、最後に受信した値がシミュレータの指令になります。優先度調停や command mux は実装していないため、通常は1つの制御ノードだけを接続します。
@@ -296,7 +301,33 @@ P(k+1)   = F P(k) F^T + Q
 | `ekf_node` | `publish_rate_hz=20`, `frame_id=world`, `child_frame_id=base_link_ekf`, `use_imu_orientation=true`, `process_pos_stddev=0.01`, `process_yaw_stddev=0.01`, `process_vel_stddev=0.1`, `process_yaw_rate_stddev=0.05`, `gps_pos_stddev=0.5`, `odom_pos_stddev=0.05`, `odom_vel_stddev=0.1`, `imu_gyro_stddev=0.02`, `imu_yaw_stddev=0.01`, `init_pos_stddev=1.0`, `init_yaw_stddev=0.5`, `init_vel_stddev=0.5`, `init_yaw_rate_stddev=0.1` |
 | `lifecycle_data_recorder` | `max_buffer_size=500`, `publish_rate_hz=1.0`, `input_topic=fused_odom` |
 
-## 8. namespace と TF
+## 8. OpenUSD bridge
+
+### 8.1 ノード契約
+
+| 実行ファイル（ノード名） | Subscribe | 出力 | 役割 |
+| --- | --- | --- | --- |
+| `odom_to_usd` | `input_topic: Odometry` | `.usd` / `.usda` / `.usdc` | pose を時系列 Xform として保存 |
+
+最初に受信した ROS timestamp を `t0`、`time_codes_per_second` を `fps` とすると、
+各 sample の USD time code は `max(0, timestamp - t0) * fps` です。位置は
+`Gf.Vec3d`、正規化した ROS quaternion `(x, y, z, w)` は
+`Gf.Quatd(w, Gf.Vec3d(x, y, z))` として authoring します。zero quaternion は
+identity quaternion に補正します。
+
+`pxr` は module import 時ではなく stage 作成時に読み込むオプション依存です。
+このため bindings がない CI でも package の build と純粋関数テストを実行できます。
+stage は指定 sample 数ごと、および正常 shutdown 時に root layer へ保存します。
+
+| parameter | default | 制約・意味 |
+| --- | --- | --- |
+| `input_topic` | `odom` | 購読する odometry topic |
+| `output_path` | `/tmp/ros2_openusd/robot_motion.usda` | `.usd` / `.usda` / `.usdc` の absolute output path |
+| `robot_prim_path` | `/World/Robot` | absolute USD prim path |
+| `time_codes_per_second` | `30.0` | 正の有限値 |
+| `save_every_n_samples` | `30` | 最小 1 |
+
+## 9. namespace と TF
 
 - 地上ロボット複数台: topic/service は launch namespace、TF は `frame_prefix` で分離。
 - swarm: topic は `/drone_N/*`、child frame は `drone_N/base_link`。
@@ -304,7 +335,7 @@ P(k+1)   = F P(k) F^T + Q
 - マニピュレータ: 単体起動前提。複数台では frame parameter と namespace の両方を変更する。
 - TF timestamp と message timestamp は同じ ROS clock から取得する。
 
-## 9. 失敗モードと制約
+## 10. 失敗モードと制約
 
 | 条件 | 現在の挙動 | 利用側の対策 |
 | --- | --- | --- |
@@ -314,10 +345,12 @@ P(k+1)   = F P(k) F^T + Q
 | 不正な配列 parameter | `ValueError` でノード起動失敗 | YAML を事前レビューし単体テストを追加 |
 | 実時間遅延 | timer jitter と callback 遅延が積分誤差になる | 本サンプルを実機制御に転用しない |
 | `use_sim_time=true` で `/clock` なし | timer が進行しない | clock publisher を起動するか false を使う |
+| OpenUSD bindings (`pxr`) 未導入 | `odom_to_usd` 起動時に説明付きエラー | ROS 2 と同じ Python 環境へ OpenUSD を導入 |
+| USD 保存先が不正、または書込不可 | stage 作成・保存時に起動失敗 | 対応拡張子と書込可能な directory を指定 |
 
-## 10. 受け入れ確認
+## 11. 受け入れ確認
 
-### 10.1 静的・単体確認
+### 11.1 静的・単体確認
 
 ```bash
 ./scripts/lint.sh
@@ -326,7 +359,7 @@ colcon test --event-handlers console_direct+
 colcon test-result --verbose
 ```
 
-### 10.2 地上ロボット smoke test
+### 11.2 地上ロボット smoke test
 
 ```bash
 ros2 launch ground_robot_sim waypoint_follower.launch.py
@@ -338,7 +371,7 @@ ros2 service call /reset_emergency std_srvs/srv/Trigger
 
 期待結果: `odom` が約30 Hz、status が `moving` または `idle`、非常停止中は位置が変化しない。
 
-### 10.3 ドローン smoke test
+### 11.3 ドローン smoke test
 
 ```bash
 ros2 launch drone_sim single_quad_waypoint.launch.py
@@ -349,7 +382,7 @@ ros2 service call /get_robot_status sample_interfaces/srv/GetRobotStatus
 
 期待結果: waypoint に向けて3D位置が変化し、status service が成功する。
 
-### 10.4 マニピュレータ smoke test
+### 11.4 マニピュレータ smoke test
 
 ```bash
 ros2 launch manipulator_sim planar_reach_demo.launch.py
@@ -360,7 +393,7 @@ ros2 run tf2_ros tf2_echo base_link tool0
 
 期待結果: 2関節の状態、手先 pose、連続した TF が取得できる。
 
-### 10.5 センサーフュージョン smoke test
+### 11.5 センサーフュージョン smoke test
 
 ```bash
 ros2 launch sensor_fusion_sim sensor_fusion_demo.launch.py
@@ -374,7 +407,17 @@ ros2 topic echo /ekf_diagnostics --once
 
 期待結果: `fused_odom` と `ekf_odom` がいずれも約 20 Hz で発行され、`ground_truth` との比較でそれぞれのフィルタの効果を確認できる。`ekf_odom` の `pose.covariance` / `twist.covariance` が非ゼロであること。`recording_status` が `active` で記録中であること。
 
-## 11. 変更時チェックリスト
+### 11.6 OpenUSD smoke test
+
+```bash
+ros2 launch openusd_bridge ground_robot_openusd.launch.py
+usdchecker /tmp/ros2_openusd/robot_motion.usda
+```
+
+期待結果: 終了時に stage が保存され、`/World/Robot` の translate と orient に複数の
+time sample があり、`usdchecker` が成功する。
+
+## 12. 変更時チェックリスト
 
 1. `declare_parameter` と `config/*.yaml` の default/上書きを更新する。
 2. topic、service、action、TF の型と方向を本書へ反映する。

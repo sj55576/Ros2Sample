@@ -15,6 +15,7 @@
 | `manipulator_sim` | 2 自由度平面マニピュレータ、関節追従、順運動学、逆運動学、TF | 2 リンク平面アーム |
 | `sensor_fusion_sim` | ノイズ付きセンサー、相補フィルタ、EKF によるセンサーフュージョン、ライフサイクルノード、QoS、コールバックグループ | センサーフュージョン |
 | `nav2_learning` | OccupancyGrid マップ配信、A* 経路計画、Pure Pursuit 経路追従、Nav2 waypoint action クライアント、コストマップ監視、log-odds 占有格子地図マッピング | Navigation2 の概念（Nav2 なし） |
+| `openusd_bridge` | `Odometry` の pose を OpenUSD stage の時系列 `Xform` として記録 | ロボット軌跡の USD 可視化・交換 |
 | `sample_interfaces` | サンプル共通の msg / srv / action 定義 | 状態取得と waypoint action |
 
 ### 1.2 設計方針
@@ -352,9 +353,27 @@
 | `nav2_waypoint_demo.launch.py` | `nav2_waypoint_client` | 別途起動した Nav2 スタックへの waypoint action 送信 |
 | `occupancy_mapping_demo.launch.py` | `simple_occupancy_mapper`、`ground_robot_sim` | 走行しながらの占有格子地図構築（SLAM入門） |
 
-## 9. 実行・観測手順
+## 9. OpenUSD 連携仕様
 
-### 9.1 ビルド
+`openusd_bridge` は `nav_msgs/msg/Odometry` を購読し、最初の message timestamp を
+time code 0 として `/World/Robot` の translate / orient に時系列サンプルを記録します。
+stage は Z-up、1 unit = 1 meter で、確認用の簡易 robot body と ground を含みます。
+`ground_robot_openusd.launch.py` は `ground_robot_node`、`diff_drive_patrol`、
+`odom_to_usd` をまとめて起動し、既定では
+`/tmp/ros2_openusd/robot_motion.usda` へ保存します。
+
+OpenUSD Python bindings (`pxr`) は重いオプション依存のため `rosdep` では導入しません。
+未導入の場合も workspace の build/test は可能ですが、`odom_to_usd` 起動時には導入方法を
+示すエラーで終了します。導入・実行手順は
+[`src/openusd_bridge/README.md`](../src/openusd_bridge/README.md) を参照してください。
+
+| launch | 主な起動ノード | シナリオ |
+| --- | --- | --- |
+| `ground_robot_openusd.launch.py` | `ground_robot_node`、`diff_drive_patrol`、`odom_to_usd` | 巡回する地上ロボットの pose を OpenUSD animation として保存 |
+
+## 10. 実行・観測手順
+
+### 10.1 ビルド
 
 ```bash
 source /opt/ros/<rosdistro>/setup.bash
@@ -362,7 +381,7 @@ colcon build --symlink-install
 source install/setup.bash
 ```
 
-### 9.2 代表デモの起動
+### 10.2 代表デモの起動
 
 ```bash
 # 地上ロボット
@@ -384,12 +403,15 @@ ros2 launch manipulator_sim planar_reach_demo.launch.py
 # センサーフュージョン
 ros2 launch sensor_fusion_sim sensor_fusion_demo.launch.py
 
+# OpenUSD 記録（別途 pxr が必要）
+ros2 launch openusd_bridge ground_robot_openusd.launch.py
+
 # Navigation2 学習パッケージ
 ros2 launch nav2_learning simple_planning_demo.launch.py
 ros2 launch nav2_learning occupancy_mapping_demo.launch.py
 ```
 
-### 9.3 topic / service の確認例
+### 10.3 topic / service の確認例
 
 ```bash
 ros2 topic list
@@ -419,7 +441,7 @@ ros2 topic echo /drone_1/pose
 ros2 service call /drone_1/get_robot_status sample_interfaces/srv/GetRobotStatus
 ```
 
-## 10. 仕様変更時の更新ポイント
+## 11. 仕様変更時の更新ポイント
 
 - 新しいノード、topic、service、action を追加したら、この文書の該当表を更新してください。
 - launch ファイルや config YAML の既定値を変更した場合は、シナリオ表とパラメータ表を更新してください。
